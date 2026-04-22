@@ -1,4 +1,4 @@
-# PizZ-O-Sheet 🧾
+# Piece-E-Sheet 🧾
 
 **PizZ-O-Sheet** is a simple command-line tool to track personal expenses using Google Sheets. It allows you to quickly add and retrieve records via the terminal.
 
