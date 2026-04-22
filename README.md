@@ -1,6 +1,6 @@
 # Piece-E-Sheet 🧾
 
-**PizZ-O-Sheet** is a simple command-line tool to track personal expenses using Google Sheets. It allows you to quickly add and retrieve records via the terminal.
+**Piece-E-Sheet** is a simple command-line tool to track personal expenses using Google Sheets. It allows you to quickly add and retrieve records via the terminal.
 
 > Built with Node.js, Google Sheets API, Commander.js, and Chalk.
 
