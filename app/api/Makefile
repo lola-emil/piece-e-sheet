@@ -1,4 +1,6 @@
-# Simple Makefile for a Go project
+MIGRATIONS_DIR=db/migrations
+
+GOOSE=goose -dir $(MIGRATIONS_DIR)
 
 # Build the application
 all: build test
@@ -60,5 +62,28 @@ watch:
                 exit 1; \
             fi; \
         fi
+
+## Apply all pending migrations
+migrate-up:
+	$(GOOSE) up
+
+## Roll back the last migration
+migrate-down:
+	$(GOOSE) down
+
+## Show migration status
+migrate-status:
+	$(GOOSE) status
+
+## Roll back and re-apply the last migration
+migrate-redo:
+	$(GOOSE) redo
+
+migrate-create:
+	@if [ -z "$(name)" ]; then \
+		echo "Missing migration name. Usage: make migrate-create name=add_users"; \
+		exit 1; \
+	fi
+	goose -dir $(MIGRATIONS_DIR) create $(name) sql
 
 .PHONY: all build run test clean watch docker-run docker-down itest
