@@ -6,18 +6,13 @@ import chalk from "chalk";
 import { google } from "googleapis";
 
 import { v4 } from "uuid";
+import { ExpenseProp } from "./types/expense";
 
-enum ExpenseProp {
-  TRANS_NO,
-  DESCRIPTION,
-  TRANS_DATE,
-  AMOUNT,
-}
 
 config({ quiet: true });
 
 program
-  .name("PizZ-O-Sheet")
+  .name("Piece 'e Sheet")
   .description("CLI Google Sheet personal expense tracker")
   .version("1.0.1");
 
