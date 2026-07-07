@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -14,19 +15,26 @@ type repo struct {
 
 type ExpenseRepository interface {
 	// TODO: pagination
-	FindAll(ctx context.Context) ([]Expense, error)
+	FindAll(ctx context.Context, userID uuid.UUID) ([]Expense, error)
 	FindByID(ctx context.Context, expenseID string) (*Expense, error)
+
 	Insert(ctx context.Context, e *Expense) error
 	UpdateByID(ctx context.Context, e *Expense) error
 	DeleteByID(ctx context.Context, expenseID string) error
 }
 
-func (r *repo) FindAll(ctx context.Context) ([]Expense, error) {
-	query := `SELECT * FROM expenses`
+func NewExpenseRepository(db *sqlx.DB) ExpenseRepository {
+	return &repo{
+		db: db,
+	}
+}
+
+func (r *repo) FindAll(ctx context.Context, userID uuid.UUID) ([]Expense, error) {
+	query := `SELECT * FROM expenses WHERE user_id = $1`
 
 	var expenses []Expense
 
-	err := r.db.SelectContext(ctx, expenses, query)
+	err := r.db.SelectContext(ctx, &expenses, query, userID)
 
 	return expenses, err
 }
@@ -36,7 +44,7 @@ func (r *repo) FindByID(ctx context.Context, expenseID string) (*Expense, error)
 
 	var expense Expense
 
-	err := r.db.GetContext(ctx, expense, query, expenseID)
+	err := r.db.GetContext(ctx, &expense, query, expenseID)
 
 	if err != nil {
 		return nil, err

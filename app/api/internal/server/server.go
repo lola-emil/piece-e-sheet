@@ -10,6 +10,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 
 	"api/internal/database"
+	"api/internal/expense"
 )
 
 type Server struct {
@@ -26,10 +27,16 @@ func NewServer() *http.Server {
 		db: database.New(),
 	}
 
+	dbInstance := NewServer.db.GetInstance()
+
+	expenseRepo := expense.NewExpenseRepository(dbInstance)
+
 	// Declare Server config
 	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", NewServer.port),
-		Handler:      NewServer.RegisterRoutes(),
+		Addr: fmt.Sprintf(":%d", NewServer.port),
+		Handler: NewServer.RegisterRoutes(
+			expenseRepo,
+		),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 30 * time.Second,
