@@ -1,21 +1,22 @@
 package server
 
 import (
-	"api/internal/appmiddleware"
+	"api/internal/auth"
+	"api/internal/category"
 	"api/internal/expense"
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-	"github.com/google/uuid"
 )
 
 func (s *Server) RegisterRoutes(
 	expenseRepo expense.ExpenseRepository,
+	categoryRepo category.CategoryRepository,
+	authRepo auth.AuthRepository,
 ) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -29,25 +30,22 @@ func (s *Server) RegisterRoutes(
 	}))
 
 	// SERVICES
+	categoryService := category.NewCategoryService(categoryRepo)
 	expenseService := expense.NewExpenseService(expenseRepo)
+	authService := auth.NewAuthService(authRepo)
 
 	// HANDLERS
+	categoryHandler := category.NewCategoryHandler(categoryService)
 	expenseHandler := expense.NewExpenseHandler(expenseService)
+	authHandler := auth.NewAuthHandler(authService)
 
-	developmentUserID, err := uuid.Parse(os.Getenv("DEVELOPMENT_USER_ID"))
-
-	if err != nil {
-		log.Fatalf("Failed to parse UUID string: %v", err)
-	}
+	auth.RegisterRoutes(r, authHandler)
 
 	r.Route("/api", func(r chi.Router) {
-		r.Use(appmiddleware.DevelopmentIdentity(
-			developmentUserID,
-		))
+		r.Use(auth.AuthMiddleware)
 
-		r.Route("/expenses", func(r chi.Router) {
-			expense.RegisterRoutes(r, &expenseHandler)
-		})
+		category.RegisterRoutes(r, categoryHandler)
+		expense.RegisterRoutes(r, expenseHandler)
 	})
 
 	r.Get("/", s.HelloWorldHandler)

@@ -9,6 +9,8 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 
+	"api/internal/auth"
+	"api/internal/category"
 	"api/internal/database"
 	"api/internal/expense"
 )
@@ -29,13 +31,17 @@ func NewServer() *http.Server {
 
 	dbInstance := NewServer.db.GetInstance()
 
+	categoryRepo := category.NewCategoryRepository(dbInstance)
 	expenseRepo := expense.NewExpenseRepository(dbInstance)
+	authRepo := auth.NewAuthRepository(dbInstance)
 
 	// Declare Server config
 	server := &http.Server{
 		Addr: fmt.Sprintf(":%d", NewServer.port),
 		Handler: NewServer.RegisterRoutes(
 			expenseRepo,
+			categoryRepo,
+			authRepo,
 		),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
