@@ -1,85 +1,32 @@
-#! /usr/bin/env node
+import { Command } from 'commander';
+import { addCommand } from './commands/add';
+import { listCommand } from './commands/list';
+import { totalCommand } from './commands/total';
+import { summaryCommand } from './commands/summary';
+import api from './api';
+import { saveToken } from './config';
+import chalk from 'chalk';
 
-import { config } from "dotenv";
-import { program } from "commander";
-import chalk from "chalk";
-import { google } from "googleapis";
-
-import { v4 } from "uuid";
-import { ExpenseProp } from "./types/expense";
-
-
-config({ quiet: true });
+const program = new Command();
 
 program
-  .name("Piece 'e Sheet")
-  .description("CLI Google Sheet personal expense tracker")
-  .version("1.0.1");
-
-program
-  .command("peek")
-  .description("Retrieves all the records from the spreadsheet")
-  .action(async () => {
-    const googleAuth = await google.auth.getClient({
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+    .command('login')
+    .description('Login to the expense tracker')
+    .argument('<email>', 'Your email')
+    .argument('<password>', 'Your password')
+    .action(async (email, password) => {
+        try {
+            const res = await api.post('http://localhost:8080/auth/login', { email, password });
+            saveToken(res.data.token);
+            console.log(chalk.green('Logged in successfully!'));
+        } catch (error: any) {
+            console.error(chalk.red('Login failed:'), error.response?.data?.error || error.message);
+        }
     });
 
-    const sheets = google.sheets({ version: "v4", auth: googleAuth });
-
-    const response = await sheets.spreadsheets.values.get({
-      spreadsheetId: process.env["GOOGLE_SHEET_ID"],
-      range: "Sheet1",
-    });
-
-    if (response.status == 200) {
-      console.table(response.data.values);
-    }
-  });
-
-program
-  .command("add")
-  .description("Add expense record to the spreadsheet")
-  .option("-a, --amount <number>", "Expense amount")
-  .option("-d, --description <string>", "Expense description", "Unspecified")
-  .action(async (options) => {
-    const opt: {
-      amount?: number;
-      description?: string;
-    } = options;
-
-    if (!opt.amount) {
-      console.log(
-        `${chalk.redBright("Error")}: option \"-a, --amount\" must be specified`
-      );
-      process.exit(1);
-    }
-
-    const googleAuth = await google.auth.getClient({
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
-
-    const sheets = google.sheets({ version: "v4", auth: googleAuth });
-
-    let newExpense: any[] = [];
-
-    let today = new Date();
-
-    newExpense[ExpenseProp.TRANS_NO] = v4();
-    newExpense[ExpenseProp.DESCRIPTION] = opt.description;
-    newExpense[ExpenseProp.AMOUNT] = opt.amount;
-    newExpense[ExpenseProp.TRANS_DATE] = today.toLocaleString();
-
-    const response = await sheets.spreadsheets.values.append({
-      spreadsheetId: process.env["GOOGLE_SHEET_ID"],
-      range: "Sheet1!A1",
-      valueInputOption: "USER_ENTERED",
-      insertDataOption: "INSERT_ROWS",
-      requestBody: {
-        values: [newExpense],
-      },
-    });
-
-    if (response.status == 200) console.log(`${chalk.greenBright("Ok")}`);
-  });
+program.addCommand(addCommand);
+program.addCommand(listCommand);
+program.addCommand(totalCommand);
+program.addCommand(summaryCommand);
 
 program.parse(process.argv);
