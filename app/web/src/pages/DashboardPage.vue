@@ -60,7 +60,7 @@
                                     <td>{{ formatDate(exp.occurred_at) }}</td>
                                     <td>{{ exp.description }}</td>
                                     <td><span class="badge badge-ghost badge-sm">{{ getCategoryName(exp.category_id)
-                                            }}</span></td>
+                                    }}</span></td>
                                     <td class="text-right font-bold text-error">-{{ formatCurrency(exp.amount) }}</td>
                                 </tr>
                                 <tr v-if="recentExpenses.length === 0">
@@ -100,6 +100,7 @@
 import { ref, computed, onMounted } from 'vue';
 import api from '../services/api';
 import type { Expense, Category } from '../types';
+import { formatCurrency, formatDate } from '@/utils/helpers';
 
 const expenses = ref<Expense[]>([]);
 const categories = ref<Category[]>([]);
@@ -175,11 +176,4 @@ const getCategoryName = (id: string | null) => {
     return cat ? cat.name : 'Unknown';
 };
 
-const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
-};
-
-const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString();
-};
 </script>

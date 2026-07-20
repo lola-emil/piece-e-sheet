@@ -86,9 +86,10 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useExpenses } from '../composables/useExpenses.ts';
+import { useExpenses } from '../composables/useExpenses';
 import ExpenseFormModal from '../components/ExpenseFormModal.vue';
-import type { Expense, ExpenseFilter, CreateExpenseRequest } from '../types/index.ts';
+import type { Expense, ExpenseFilter, CreateExpenseRequest } from '../types/index';
+import { formatCurrency, formatDate } from '@/utils/helpers';
 
 const {
     expenses, categories, isLoading, isSaving,
@@ -128,18 +129,9 @@ const handleSave = async (payload: CreateExpenseRequest) => {
     }
 };
 
-// Helpers
 const getCategoryName = (id: string) => {
     const cat = categories.value.find(c => c.id === id);
     return cat ? cat.name : 'Unknown';
-};
-
-const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
-};
-
-const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString();
 };
 
 // Load data
