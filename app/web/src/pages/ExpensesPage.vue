@@ -11,7 +11,7 @@
         <!-- Filters -->
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body p-4">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     <!-- Search -->
                     <input v-model="searchQuery" type="text" placeholder="Search description..."
                         class="input input-bordered w-full" />
@@ -24,9 +24,50 @@
                         </option>
                     </select>
 
+                    <!-- Amount Range -->
+                    <div class="flex gap-2">
+                        <input v-model.number="filters.min_amount" type="number" placeholder="Min $"
+                            class="input input-bordered w-full" min="0" step="0.01" />
+                        <input v-model.number="filters.max_amount" type="number" placeholder="Max $"
+                            class="input input-bordered w-full" min="0" step="0.01" />
+                    </div>
+
                     <!-- Date Range -->
-                    <input v-model="filters.start_date" type="date" class="input input-bordered w-full" />
-                    <input v-model="filters.end_date" type="date" class="input input-bordered w-full" />
+                    <div class="flex gap-2">
+                        <input v-model="filters.start_date" type="date" class="input input-bordered w-full"
+                            title="Start date" />
+                        <input v-model="filters.end_date" type="date" class="input input-bordered w-full"
+                            title="End date" />
+                    </div>
+
+                    <!-- Sort -->
+                    <select v-model="filters.sort_by" class="select select-bordered w-full">
+                        <option value="date_desc">Newest first</option>
+                        <option value="date_asc">Oldest first</option>
+                        <option value="amount_desc">Highest amount</option>
+                        <option value="amount_asc">Lowest amount</option>
+                        <option value="description_asc">Description (A–Z)</option>
+                    </select>
+
+                    <!-- Quick presets -->
+                    <select v-model="datePreset" class="select select-bordered w-full" @change="applyDatePreset">
+                        <option value="">Custom date range</option>
+                        <option value="today">Today</option>
+                        <option value="week">This week</option>
+                        <option value="month">This month</option>
+                        <option value="year">This year</option>
+                        <option value="last_month">Last month</option>
+                    </select>
+
+                    <!-- Actions -->
+                    <div class="flex items-center gap-2">
+                        <button class="btn btn-ghost btn-sm" @click="clearFilters">
+                            Clear filters
+                        </button>
+                        <span v-if="activeFilterCount > 0" class="badge badge-neutral">
+                            {{ activeFilterCount }} active
+                        </span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -98,15 +139,108 @@ const {
 
 const selectedExpense = ref<Expense | null>(null);
 const searchQuery = ref('');
-const filters = ref<ExpenseFilter>({});
-
-// Apply filters and search
-const filteredExpenses = computed(() => {
-    return expenses.value.filter(exp => {
-        const matchesSearch = exp.description.toLowerCase().includes(searchQuery.value.toLowerCase());
-        return matchesSearch;
-    });
+const datePreset = ref('');
+const filters = ref<ExpenseFilter & {
+    min_amount?: number;
+    max_amount?: number;
+    sort_by?: string;
+}>({
+    sort_by: 'date_desc',
 });
+
+const activeFilterCount = computed(() => {
+    let count = 0;
+    if (searchQuery.value) count++;
+    if (filters.value.category_id !== undefined) count++;
+    if (filters.value.min_amount !== undefined && filters.value.min_amount !== null) count++;
+    if (filters.value.max_amount !== undefined && filters.value.max_amount !== null) count++;
+    if (filters.value.start_date) count++;
+    if (filters.value.end_date) count++;
+    return count;
+});
+
+const filteredExpenses = computed(() => {
+    const q = searchQuery.value.toLowerCase().trim();
+    const { category_id, start_date, end_date, min_amount, max_amount, sort_by } = filters.value;
+
+    let result = expenses.value.filter(exp => {
+        if (q && !exp.description.toLowerCase().includes(q)) return false;
+        if (category_id !== undefined && exp.category_id !== category_id) return false;
+        if (start_date && new Date(exp.occurred_at) < new Date(start_date)) return false;
+        if (end_date) {
+            const end = new Date(end_date);
+            end.setHours(23, 59, 59, 999);
+            if (new Date(exp.occurred_at) > end) return false;
+        }
+        if (min_amount !== undefined && min_amount !== null && exp.amount < min_amount) return false;
+        if (max_amount !== undefined && max_amount !== null && exp.amount > max_amount) return false;
+        return true;
+    });
+
+    switch (sort_by) {
+        case 'date_asc':
+            result.sort((a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime());
+            break;
+        case 'date_desc':
+            result.sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
+            break;
+        case 'amount_asc':
+            result.sort((a, b) => a.amount - b.amount);
+            break;
+        case 'amount_desc':
+            result.sort((a, b) => b.amount - a.amount);
+            break;
+        case 'description_asc':
+            result.sort((a, b) => a.description.localeCompare(b.description));
+            break;
+    }
+
+    return result;
+});
+
+const applyDatePreset = () => {
+    const now = new Date();
+    const toISO = (d: Date) => d.toISOString().split('T')[0];
+
+    switch (datePreset.value) {
+        case 'today':
+            filters.value.start_date = toISO(now);
+            filters.value.end_date = toISO(now);
+            break;
+        case 'week': {
+            const start = new Date(now);
+            start.setDate(now.getDate() - now.getDay());
+            filters.value.start_date = toISO(start);
+            filters.value.end_date = toISO(now);
+            break;
+        }
+        case 'month':
+            filters.value.start_date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+            filters.value.end_date = toISO(now);
+            break;
+        case 'year':
+            filters.value.start_date = `${now.getFullYear()}-01-01`;
+            filters.value.end_date = toISO(now);
+            break;
+        case 'last_month': {
+            const firstOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastMonthEnd = new Date(firstOfThisMonth);
+            lastMonthEnd.setDate(lastMonthEnd.getDate() - 1);
+            const lastMonthStart = new Date(lastMonthEnd.getFullYear(), lastMonthEnd.getMonth(), 1);
+            filters.value.start_date = toISO(lastMonthStart);
+            filters.value.end_date = toISO(lastMonthEnd);
+            break;
+        }
+        default:
+            break;
+    }
+};
+
+const clearFilters = () => {
+    searchQuery.value = '';
+    datePreset.value = '';
+    filters.value = { sort_by: 'date_desc' };
+};
 
 // Modal Handlers
 const openAddModal = () => {
@@ -134,7 +268,6 @@ const getCategoryName = (id: string) => {
     return cat ? cat.name : 'Unknown';
 };
 
-// Load data
 onMounted(() => {
     fetchCategories();
     fetchExpenses();

@@ -11,6 +11,10 @@ build:
 	
 	@go build -o main cmd/api/main.go
 
+build-prod:
+	@echo "Building for production (linux/arm64)..."
+	@GOOS=linux GOARCH=arm64 go build -o main cmd/api/main.go
+
 # Run the application
 run:
 	@go run cmd/api/main.go
