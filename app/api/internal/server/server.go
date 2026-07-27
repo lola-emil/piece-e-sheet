@@ -12,6 +12,7 @@ import (
 	"api/internal/auth"
 	"api/internal/category"
 	"api/internal/database"
+	"api/internal/debt"
 	"api/internal/expense"
 )
 
@@ -34,6 +35,7 @@ func NewServer() *http.Server {
 	categoryRepo := category.NewCategoryRepository(dbInstance)
 	expenseRepo := expense.NewExpenseRepository(dbInstance)
 	authRepo := auth.NewAuthRepository(dbInstance)
+	debtRepo := debt.NewDebtRepository(dbInstance)
 
 	// Declare Server config
 	server := &http.Server{
@@ -42,6 +44,7 @@ func NewServer() *http.Server {
 			expenseRepo,
 			categoryRepo,
 			authRepo,
+			debtRepo,
 		),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,
