@@ -27,7 +27,7 @@ export function useCategories() {
             } else {
                 await api.post('/api/categories', { name });
             }
-            await fetchCategories(); // Refresh list
+            await fetchCategories();
             return true;
         } catch (error) {
             console.error('Failed to save category', error);

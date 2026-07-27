@@ -18,8 +18,8 @@
 
         <div v-else-if="filteredDebts?.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div v-for="debt in filteredDebts" :key="debt.id"
-                class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow border-l-4"
-                :class="debt.type === 'i_owe' ? 'border-error' : 'border-success'">
+                class="card bg-base-100 shadow-md hover:shadow-lg transition-shadow border-l-4 cursor-pointer"
+                :class="debt.type === 'i_owe' ? 'border-error' : 'border-success'" @click="openDrawer(debt)">
                 <div class="card-body p-4">
                     <div class="flex justify-between items-start">
                         <div>
@@ -75,6 +75,9 @@
         <!-- Modal -->
         <DebtFormModal modalId="debt_modal" :debt="selectedDebt" :is-saving="isSaving" @save="handleSave"
             @close="selectedDebt = null" />
+
+        <DebtDetailsDrawer drawerId="debt_details_drawer" :debt="selectedDebtForDrawer" />
+
     </div>
 </template>
 
@@ -84,6 +87,9 @@ import { useDebts } from '../composables/useDebts';
 import DebtFormModal from '../components/DebtFormModal.vue';
 import type { Debt, CreateDebtRequest, UpdateDebtRequest } from '../types';
 import { formatCurrency, formatDate } from '@/utils/helpers.ts';
+import DebtDetailsDrawer from '../components/DebtDetailsDrawer.vue';
+
+const selectedDebtForDrawer = ref<Debt | null>(null);
 
 const { debts, isLoading, isSaving, fetchDebts, saveDebt, deleteDebt } = useDebts();
 
@@ -113,6 +119,12 @@ const handleSave = async (payload: CreateDebtRequest | UpdateDebtRequest) => {
         const modal = document.getElementById('debt_modal') as HTMLDialogElement;
         if (modal) modal.close();
     }
+};
+
+const openDrawer = (debt: Debt) => {
+    selectedDebtForDrawer.value = debt;
+    const drawer = document.getElementById('debt_details_drawer') as HTMLInputElement;
+    if (drawer) drawer.checked = true;
 };
 
 onMounted(() => {

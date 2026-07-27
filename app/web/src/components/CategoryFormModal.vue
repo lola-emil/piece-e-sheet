@@ -44,7 +44,6 @@ const emit = defineEmits<{
 const isEdit = computed(() => !!props.category);
 const name = ref('');
 
-// Reset form when modal opens or category changes
 watch(() => props.category, (newCat) => {
     name.value = newCat ? newCat.name : '';
 }, { immediate: true });

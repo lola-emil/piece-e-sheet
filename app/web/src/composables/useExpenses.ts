@@ -37,7 +37,7 @@ export function useExpenses() {
             } else {
                 await api.post('/api/expenses', payload);
             }
-            await fetchExpenses(); // Refresh list
+            await fetchExpenses();
             return true;
         } catch (error) {
             console.error('Failed to save expense', error);
@@ -52,7 +52,7 @@ export function useExpenses() {
 
         try {
             await api.delete(`/api/expenses/${id}`);
-            await fetchExpenses(); // Refresh list
+            await fetchExpenses();
         } catch (error) {
             console.error('Failed to delete expense', error);
         }

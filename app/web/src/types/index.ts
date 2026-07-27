@@ -96,3 +96,17 @@ export interface UpdateDebtRequest extends CreateDebtRequest {
     remaining_amount: number;
     status: 'pending' | 'partial' | 'paid';
 }
+
+export interface Payment {
+    id: string;
+    debt_id: string;
+    amount: number;
+    note: string;
+    paid_at: string;
+}
+
+export interface CreatePaymentRequest {
+    debt_id: string;
+    amount: number;
+    note: string;
+}

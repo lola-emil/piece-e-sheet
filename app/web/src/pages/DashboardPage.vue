@@ -2,7 +2,6 @@
     <div class="space-y-6">
         <h1 class="text-3xl font-bold">Dashboard</h1>
 
-        <!-- 1. Stats Section -->
         <div class="stats stats-vertical lg:stats-horizontal shadow w-full bg-base-100">
             <div class="stat">
                 <div class="stat-figure text-primary">
@@ -38,10 +37,8 @@
             </div>
         </div>
 
-        <!-- 2. Charts & Recent Transactions Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            <!-- Recent Transactions (Takes up 2 columns on desktop) -->
             <div class="card bg-base-100 shadow-xl lg:col-span-2">
                 <div class="card-body">
                     <h2 class="card-title">Recent Transactions</h2>
@@ -72,7 +69,6 @@
                 </div>
             </div>
 
-            <!-- Category Breakdown (Takes up 1 column) -->
             <div class="card bg-base-100 shadow-xl">
                 <div class="card-body">
                     <h2 class="card-title">Category Breakdown</h2>
@@ -106,7 +102,6 @@ const expenses = ref<Expense[]>([]);
 const categories = ref<Category[]>([]);
 const isLoading = ref(true);
 
-// Fetch data
 onMounted(async () => {
     try {
         const [expRes, catRes] = await Promise.all([
@@ -122,7 +117,6 @@ onMounted(async () => {
     }
 });
 
-// Computed Stats
 const stats = computed(() => {
     const now = new Date();
     const thisMonth = now.getMonth();
@@ -136,7 +130,6 @@ const stats = computed(() => {
         if (expDate.getMonth() === thisMonth && expDate.getFullYear() === thisYear) {
             thisMonthTotal += exp.amount;
         }
-        // Simple last month check
         if (expDate.getMonth() === thisMonth - 1 && expDate.getFullYear() === thisYear) {
             lastMonthTotal += exp.amount;
         }
@@ -152,7 +145,7 @@ const stats = computed(() => {
 const recentExpenses = computed(() => {
     return [...expenses.value]
         .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())
-        .slice(0, 5); // Get top 5
+        .slice(0, 5);
 });
 
 const categoryTotals = computed(() => {
@@ -169,7 +162,6 @@ const categoryTotals = computed(() => {
     return totals;
 });
 
-// Helpers
 const getCategoryName = (id: string | null) => {
     if (!id) return 'Uncategorized';
     const cat = categories.value.find(c => c.id === id);

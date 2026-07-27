@@ -5,6 +5,7 @@ import (
 	"api/internal/category"
 	"api/internal/debt"
 	"api/internal/expense"
+	"api/internal/payment"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -19,6 +20,7 @@ func (s *Server) RegisterRoutes(
 	categoryRepo category.CategoryRepository,
 	authRepo auth.AuthRepository,
 	debtRepo debt.DebtRepository,
+	paymentRepo payment.PaymentRepository,
 ) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -36,12 +38,14 @@ func (s *Server) RegisterRoutes(
 	expenseService := expense.NewExpenseService(expenseRepo)
 	authService := auth.NewAuthService(authRepo)
 	debtService := debt.NewDebtService(debtRepo)
+	paymentService := payment.NewPaymentService(paymentRepo)
 
 	// HANDLERS
 	categoryHandler := category.NewCategoryHandler(categoryService)
 	expenseHandler := expense.NewExpenseHandler(expenseService)
 	authHandler := auth.NewAuthHandler(authService)
 	debtHandler := debt.NewDebtHandler(debtService)
+	paymentHandler := payment.NewPaymentHandler(paymentService)
 
 	auth.RegisterRoutes(r, authHandler)
 
@@ -51,6 +55,7 @@ func (s *Server) RegisterRoutes(
 		category.RegisterRoutes(r, categoryHandler)
 		expense.RegisterRoutes(r, expenseHandler)
 		debt.RegisterRoutes(r, debtHandler)
+		payment.RegisterRoutes(r, paymentHandler)
 	})
 
 	r.Get("/", s.HelloWorldHandler)

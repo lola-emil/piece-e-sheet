@@ -40,7 +40,6 @@
                     <input v-model="form.due_date" type="date" class="input input-bordered w-full" />
                 </div>
 
-                <!-- Edit Only: Status & Remaining -->
                 <div v-if="isEdit" class="divider my-2"></div>
 
                 <div v-if="isEdit" class="grid grid-cols-2 gap-4">
