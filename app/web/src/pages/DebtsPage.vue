@@ -2,7 +2,7 @@
     <div class="space-y-6">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h1 class="text-3xl font-bold">Debts</h1>
-            <button class="btn btn-primary" @click="openModal()">+ Add Debt</button>
+            <button class="btn btn-primary" @click="openModal()"><Plus :size="16"/> Add Debt</button>
         </div>
 
         <div role="tablist" class="tabs tabs-boxed bg-base-100 p-2 w-fit">
@@ -28,11 +28,7 @@
                         </div>
                         <div class="dropdown dropdown-end">
                             <label tabindex="0" class="btn btn-ghost btn-xs btn-circle">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                                </svg>
+                                <EllipsisVertical :size="16" />
                             </label>
                             <ul tabindex="0"
                                 class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32 z-10 border border-base-200">
@@ -62,7 +58,6 @@
             </div>
         </div>
 
-        <!-- Empty State -->
         <div v-else class="text-center py-12 bg-base-100 rounded-lg shadow-sm">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-base-content/30 mb-4" fill="none"
                 viewBox="0 0 24 24" stroke="currentColor">
@@ -72,22 +67,22 @@
             <p class="text-base-content/60">No debts found.</p>
         </div>
 
-        <!-- Modal -->
-        <DebtFormModal modalId="debt_modal" :debt="selectedDebt" :is-saving="isSaving" @save="handleSave"
-            @close="selectedDebt = null" />
+        <DebtFormModal ref="debt-modal" modalId="debt_modal" :debt="selectedDebt" :is-saving="isSaving"
+            @save="handleSave" @close="selectedDebt = null" />
 
-        <DebtDetailsDrawer drawerId="debt_details_drawer" :debt="selectedDebtForDrawer" />
+        <DebtDetailsDrawer ref="debt-details-drawer" drawerId="debt_details_drawer" :debt="selectedDebtForDrawer" />
 
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, useTemplateRef } from 'vue';
 import { useDebts } from '../composables/useDebts';
 import DebtFormModal from '../components/DebtFormModal.vue';
 import type { Debt, CreateDebtRequest, UpdateDebtRequest } from '../types';
 import { formatCurrency, formatDate } from '@/utils/helpers.ts';
 import DebtDetailsDrawer from '../components/DebtDetailsDrawer.vue';
+import { EllipsisVertical, Plus } from '@lucide/vue';
 
 const selectedDebtForDrawer = ref<Debt | null>(null);
 
@@ -107,24 +102,25 @@ const getStatusBadge = (status: string) => {
     return 'badge-ghost';
 };
 
+const debtModal = useTemplateRef<InstanceType<typeof DebtFormModal>>('debt-modal')
+
 const openModal = (debt: Debt | null = null) => {
     selectedDebt.value = debt;
-    const modal = document.getElementById('debt_modal') as HTMLDialogElement;
-    if (modal) modal.showModal();
+    debtModal.value?.openModal();
 };
 
 const handleSave = async (payload: CreateDebtRequest | UpdateDebtRequest) => {
     const success = await saveDebt(payload, selectedDebt.value?.id);
     if (success) {
-        const modal = document.getElementById('debt_modal') as HTMLDialogElement;
-        if (modal) modal.close();
+        debtModal.value?.closeModal();
     }
 };
 
+const drawer = useTemplateRef<InstanceType<typeof DebtDetailsDrawer>>('debt-details-drawer');
+
 const openDrawer = (debt: Debt) => {
     selectedDebtForDrawer.value = debt;
-    const drawer = document.getElementById('debt_details_drawer') as HTMLInputElement;
-    if (drawer) drawer.checked = true;
+    drawer.value?.openDrawer();
 };
 
 onMounted(() => {

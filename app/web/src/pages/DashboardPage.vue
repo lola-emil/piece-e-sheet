@@ -3,8 +3,8 @@
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h1 class="text-3xl font-bold">Dashboard</h1>
             <div class="flex gap-2">
-                <button class="btn btn-primary btn-sm" @click="$router.push('/expenses/new')">
-                    + Add Expense
+                <button class="btn btn-primary btn-sm" @click="expenseModal?.openModal">
+                    <Plus :size="16" /> Add Expense
                 </button>
                 <button class="btn btn-outline btn-sm" @click="$router.push('/expenses')">
                     View All
@@ -49,12 +49,7 @@
             <div class="stats stats-vertical lg:stats-horizontal shadow w-full bg-base-100">
                 <div class="stat">
                     <div class="stat-figure text-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                            class="inline-block w-8 h-8 stroke-current">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                            </path>
-                        </svg>
+                        <Receipt :size="24" />
                     </div>
                     <div class="stat-title">Total Expenses (This Month)</div>
                     <div class="stat-value text-primary">{{ formatCurrency(stats.thisMonth) }}</div>
@@ -66,11 +61,7 @@
 
                 <div class="stat">
                     <div class="stat-figure text-secondary">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                            class="inline-block w-8 h-8 stroke-current">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                        </svg>
+                        <Zap :size="24" />
                     </div>
                     <div class="stat-title">Last Month</div>
                     <div class="stat-value text-secondary">{{ formatCurrency(stats.lastMonth) }}</div>
@@ -79,12 +70,7 @@
 
                 <div class="stat">
                     <div class="stat-figure text-accent">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                            class="inline-block w-8 h-8 stroke-current">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
-                            </path>
-                        </svg>
+                        <Calendar :size="24" />
                     </div>
                     <div class="stat-title">Daily Average</div>
                     <div class="stat-value text-accent">{{ formatCurrency(stats.dailyAverage) }}</div>
@@ -160,11 +146,14 @@
                 </div>
             </div>
         </template>
+
+        <ExpenseFormModal ref="expense-modal" :expense="null" :categories="categories" :is-saving="isSaving"
+            @save="handleSave" />
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, useTemplateRef } from 'vue';
 import { Line, Doughnut } from 'vue-chartjs';
 import {
     Chart as ChartJS,
@@ -178,15 +167,24 @@ import {
     ArcElement,
     Filler
 } from 'chart.js';
-import api from '../services/api';
-import type { Expense, Category } from '../types';
+import type { CreateExpenseRequest } from '../types';
 import { formatCurrency, formatDate } from '@/utils/helpers';
+import { Calendar, Plus, Receipt, Zap } from '@lucide/vue';
+import ExpenseFormModal from '@/components/ExpenseFormModal.vue';
+import { useExpenses } from '@/composables/useExpenses';
 
 ChartJS.register(Title, Tooltip, Legend, LineElement, CategoryScale, LinearScale, PointElement, ArcElement, Filler);
 
-const expenses = ref<Expense[]>([]);
-const categories = ref<Category[]>([]);
 const isLoading = ref(true);
+
+const {
+    expenses, categories,
+    isSaving,
+    saveExpense, fetchExpenses, fetchCategories
+} = useExpenses();
+
+const expenseModal = useTemplateRef('expense-modal')
+
 
 const getThemeColor = (varName: string, opacity = 1): string => {
     const raw = getComputedStyle(document.documentElement)
@@ -214,12 +212,10 @@ const themeColors = () => ({
 
 onMounted(async () => {
     try {
-        const [expRes, catRes] = await Promise.all([
-            api.get('/api/expenses'),
-            api.get('/api/categories')
+        await Promise.all([
+            fetchExpenses(),
+            fetchCategories()
         ]);
-        expenses.value = expRes.data.data ?? [];
-        categories.value = catRes.data.data ?? [];
     } catch (error) {
         console.error('Failed to load dashboard data', error);
     } finally {
@@ -447,6 +443,14 @@ const getCategoryName = (id: string | null) => {
     if (!id) return 'Uncategorized';
     const cat = categories.value.find(c => c.id === id);
     return cat ? cat.name : 'Unknown';
+};
+
+const handleSave = async (payload: CreateExpenseRequest) => {
+    const success = await saveExpense(payload);
+    if (success) {
+        expenseModal.value?.closeModal();
+
+    }
 };
 </script>
 

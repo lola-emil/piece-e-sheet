@@ -1,5 +1,5 @@
 <template>
-    <dialog :id="modalId" class="modal">
+    <dialog ref="expense-modal" class="modal">
         <div class="modal-box">
             <h3 class="font-bold text-lg">{{ isEdit ? 'Edit Expense' : 'Add Expense' }}</h3>
 
@@ -50,11 +50,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, useTemplateRef } from 'vue';
 import type { Expense, Category, CreateExpenseRequest } from '../types';
 
 const props = defineProps<{
-    modalId: string;
     expense: Expense | null;
     categories: Category[];
     isSaving: boolean;
@@ -64,6 +63,8 @@ const emit = defineEmits<{
     (e: 'save', payload: CreateExpenseRequest): void;
     (e: 'close'): void;
 }>();
+
+const expenseModal = useTemplateRef("expense-modal");
 
 const isEdit = computed(() => !!props.expense);
 
@@ -105,8 +106,17 @@ const handleSubmit = () => {
 };
 
 const closeModal = () => {
-    const modal = document.getElementById(props.modalId) as HTMLDialogElement;
-    if (modal) modal.close();
+    expenseModal.value?.close();
     emit('close');
 };
+
+const openModal = () => {
+    expenseModal.value?.showModal();
+}
+
+defineExpose({
+    openModal,
+    closeModal,
+})
+
 </script>

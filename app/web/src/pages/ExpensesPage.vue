@@ -1,6 +1,5 @@
 <template>
     <div class="space-y-6">
-        <!-- Header -->
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h1 class="text-3xl font-bold">Expenses</h1>
             <button class="btn btn-primary" @click="openAddModal">
@@ -8,15 +7,12 @@
             </button>
         </div>
 
-        <!-- Filters -->
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body p-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <!-- Search -->
                     <input v-model="searchQuery" type="text" placeholder="Search description..."
                         class="input input-bordered w-full" />
 
-                    <!-- Category Filter -->
                     <select v-model="filters.category_id" class="select select-bordered w-full">
                         <option :value="undefined">All Categories</option>
                         <option v-for="cat in categories" :key="cat.id" :value="cat.id">
@@ -24,7 +20,6 @@
                         </option>
                     </select>
 
-                    <!-- Amount Range -->
                     <div class="flex gap-2">
                         <input v-model.number="filters.min_amount" type="number" placeholder="Min $"
                             class="input input-bordered w-full" min="0" step="0.01" />
@@ -32,7 +27,6 @@
                             class="input input-bordered w-full" min="0" step="0.01" />
                     </div>
 
-                    <!-- Date Range -->
                     <div class="flex gap-2">
                         <input v-model="filters.start_date" type="date" class="input input-bordered w-full"
                             title="Start date" />
@@ -40,7 +34,6 @@
                             title="End date" />
                     </div>
 
-                    <!-- Sort -->
                     <select v-model="filters.sort_by" class="select select-bordered w-full">
                         <option value="date_desc">Newest first</option>
                         <option value="date_asc">Oldest first</option>
@@ -49,7 +42,6 @@
                         <option value="description_asc">Description (A–Z)</option>
                     </select>
 
-                    <!-- Quick presets -->
                     <select v-model="datePreset" class="select select-bordered w-full" @change="applyDatePreset">
                         <option value="">Custom date range</option>
                         <option value="today">Today</option>
@@ -59,7 +51,6 @@
                         <option value="last_month">Last month</option>
                     </select>
 
-                    <!-- Actions -->
                     <div class="flex items-center gap-2">
                         <button class="btn btn-ghost btn-sm" @click="clearFilters">
                             Clear filters
@@ -72,7 +63,6 @@
             </div>
         </div>
 
-        <!-- Table -->
         <div class="card bg-base-100 shadow-xl overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="table table-zebra w-full">
@@ -119,14 +109,13 @@
             </div>
         </div>
 
-        <!-- Add/Edit Modal -->
-        <ExpenseFormModal modalId="expense_modal" :expense="selectedExpense" :categories="categories"
-            :is-saving="isSaving" @save="handleSave" @close="selectedExpense = null" />
+        <ExpenseFormModal ref="expense-modal" :expense="selectedExpense" :categories="categories" :is-saving="isSaving"
+            @save="handleSave" @close="selectedExpense = null" />
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, useTemplateRef } from 'vue';
 import { useExpenses } from '../composables/useExpenses';
 import ExpenseFormModal from '../components/ExpenseFormModal.vue';
 import type { Expense, ExpenseFilter, CreateExpenseRequest } from '../types/index';
@@ -236,30 +225,28 @@ const applyDatePreset = () => {
     }
 };
 
+const expenseModal = useTemplateRef<InstanceType<typeof ExpenseFormModal>>('expense-modal');
+
 const clearFilters = () => {
     searchQuery.value = '';
     datePreset.value = '';
     filters.value = { sort_by: 'date_desc' };
 };
 
-// Modal Handlers
 const openAddModal = () => {
     selectedExpense.value = null;
-    const modal = document.getElementById('expense_modal') as HTMLDialogElement;
-    if (modal) modal.showModal();
+    expenseModal.value?.openModal();
 };
 
 const openEditModal = (exp: Expense) => {
     selectedExpense.value = exp;
-    const modal = document.getElementById('expense_modal') as HTMLDialogElement;
-    if (modal) modal.showModal();
+    expenseModal.value?.openModal();
 };
 
 const handleSave = async (payload: CreateExpenseRequest) => {
     const success = await saveExpense(payload, selectedExpense.value?.id);
     if (success) {
-        const modal = document.getElementById('expense_modal') as HTMLDialogElement;
-        if (modal) modal.close();
+        expenseModal.value?.closeModal();
     }
 };
 

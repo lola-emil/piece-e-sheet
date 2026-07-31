@@ -23,21 +23,13 @@
                 <div class="card-body p-4">
                     <div class="flex justify-between items-start">
                         <h2 class="card-title text-base truncate" :title="cat.name">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-primary" fill="none"
-                                viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                            </svg>
+                            <Tag :size="16" />
                             {{ cat.name }}
                         </h2>
 
                         <div class="dropdown dropdown-end">
                             <label tabindex="0" class="btn btn-ghost btn-xs btn-circle">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                                </svg>
+                                <EllipsisVertical :size="16" />
                             </label>
                             <ul tabindex="0"
                                 class="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-32 z-10 border border-base-200">
@@ -54,12 +46,11 @@
             </div>
         </div>
 
-        <div v-else class="text-center py-12 bg-base-100 rounded-lg shadow-sm">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-base-content/30 mb-4" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-            </svg>
+        <div v-else class="text-center py-12 bg-base-100 rounded-lg shadow-sm flex flex-col items-center gap-5">
+
+            <div class="mx-auto text-base-content/30">
+                <Tag :size="48" />
+            </div>
             <p class="text-base-content/60">No categories found.</p>
         </div>
 
@@ -73,6 +64,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useCategories } from '../composables/useCategories';
 import CategoryFormModal from '../components/CategoryFormModal.vue';
 import type { Category } from '../types';
+import { EllipsisVertical, Tag } from '@lucide/vue';
 
 const { categories, isLoading, isSaving, fetchCategories, saveCategory, deleteCategory } = useCategories();
 

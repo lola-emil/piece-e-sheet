@@ -1,30 +1,26 @@
 <template>
-    <dialog :id="modalId" class="modal">
+    <dialog ref="debt-modal" :id="modalId" class="modal">
         <div class="modal-box">
             <h3 class="font-bold text-lg">{{ isEdit ? 'Edit Debt' : 'Add Debt' }}</h3>
 
             <form @submit.prevent="handleSubmit" class="space-y-4 mt-4">
-                <!-- Person Name -->
                 <div class="form-control">
                     <label class="label"><span class="label-text">Person / Entity</span></label>
                     <input v-model="form.person_name" type="text" class="input input-bordered w-full" required />
                 </div>
 
-                <!-- Description -->
                 <div class="form-control">
                     <label class="label"><span class="label-text">Description</span></label>
                     <input v-model="form.description" type="text" class="input input-bordered w-full" />
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
-                    <!-- Amount -->
                     <div class="form-control">
                         <label class="label"><span class="label-text">Amount</span></label>
                         <input v-model.number="form.amount" type="number" step="0.01"
                             class="input input-bordered w-full" required />
                     </div>
 
-                    <!-- Type -->
                     <div class="form-control">
                         <label class="label"><span class="label-text">Type</span></label>
                         <select v-model="form.type" class="select select-bordered w-full">
@@ -34,7 +30,6 @@
                     </div>
                 </div>
 
-                <!-- Due Date -->
                 <div class="form-control">
                     <label class="label"><span class="label-text">Due Date (Optional)</span></label>
                     <input v-model="form.due_date" type="date" class="input input-bordered w-full" />
@@ -58,7 +53,6 @@
                     </div>
                 </div>
 
-                <!-- Actions -->
                 <div class="modal-action">
                     <button type="button" class="btn" @click="closeModal">Cancel</button>
                     <button type="submit" class="btn btn-primary" :class="{ 'loading': isSaving }" :disabled="isSaving">
@@ -74,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+import { ref, watch, computed, useTemplateRef } from 'vue';
 import type { Debt, CreateDebtRequest, UpdateDebtRequest } from '../types';
 
 const props = defineProps<{
@@ -87,6 +81,8 @@ const emit = defineEmits<{
     (e: 'save', payload: CreateDebtRequest | UpdateDebtRequest): void;
     (e: 'close'): void;
 }>();
+
+const modal = useTemplateRef('debt-modal')
 
 const isEdit = computed(() => !!props.debt);
 
@@ -142,8 +138,16 @@ const handleSubmit = () => {
 };
 
 const closeModal = () => {
-    const modal = document.getElementById(props.modalId) as HTMLDialogElement;
-    if (modal) modal.close();
+    modal.value?.close();
     emit('close');
 };
+
+const openModal = () => {
+    modal.value?.showModal();
+}
+
+defineExpose({
+    closeModal,
+    openModal,
+})
 </script>

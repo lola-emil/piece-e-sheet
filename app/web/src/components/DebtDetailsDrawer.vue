@@ -1,6 +1,6 @@
 <template>
     <div class="drawer drawer-end">
-        <input :id="drawerId" type="checkbox" class="drawer-toggle" />
+        <input ref="drawer-toggle" :id="drawerId" type="checkbox" class="drawer-toggle" />
         <div class="drawer-side z-30">
             <label :for="drawerId" class="drawer-overlay"></label>
 
@@ -71,7 +71,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, useTemplateRef, watch } from 'vue';
 import { usePayments } from '../composables/usePayments';
 import type { Debt, CreatePaymentRequest } from '../types';
 import { formatCurrency, formatDate } from '@/utils/helpers';
@@ -115,4 +115,14 @@ const getStatusBadge = (status: string) => {
     if (status === 'partial') return 'badge-warning text-white';
     return 'badge-ghost';
 };
+
+const drawer = useTemplateRef('drawer-toggle');
+
+const openDrawer = () => {
+    drawer.value!.checked = true;
+}
+
+defineExpose({
+    openDrawer,
+})
 </script>
