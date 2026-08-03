@@ -1,6 +1,6 @@
 <template>
     <div class="min-h-screen flex items-center justify-center p-4">
-        <div class="card w-full max-w-md bg-base-100 shadow-xl">
+        <div class="card w-full max-w-md bg-base-100">
             <div class="card-body">
                 <h2 class="card-title text-2xl font-bold justify-center mb-4">
                     Expense Tracker
