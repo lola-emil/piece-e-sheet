@@ -19,6 +19,7 @@ export interface Expense {
     id: string;
     user_id: string;
     category_id: string | null;
+    account_id: string | null;
     description: string;
     amount: number;
     occurred_at: string;
@@ -35,6 +36,7 @@ export interface ExpenseFilter {
 
 export interface CreateExpenseRequest {
     category_id: string | null;
+    account_id: string | null;
     description: string;
     amount: number;
     occurred_at: string;
@@ -42,6 +44,7 @@ export interface CreateExpenseRequest {
 
 export interface UpdateExpenseRequest {
     category_id?: string | null;
+    account_id?: string | null;
     description: string;
     amount: number;
     occurred_at: string;
@@ -109,4 +112,19 @@ export interface CreatePaymentRequest {
     debt_id: string;
     amount: number;
     note: string;
+}
+
+
+export interface Account {
+  id: string;
+  user_id: string;
+  name: string;
+  type: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateAccountRequest {
+  name: string;
+  type: string;
 }

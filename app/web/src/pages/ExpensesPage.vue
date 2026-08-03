@@ -109,8 +109,8 @@
             </div>
         </div>
 
-        <ExpenseFormModal ref="expense-modal" :expense="selectedExpense" :categories="categories" :is-saving="isSaving"
-            @save="handleSave" @close="selectedExpense = null" />
+        <ExpenseFormModal ref="expense-modal" :expense="selectedExpense" :categories="categories" :accounts="accounts"
+            :is-saving="isSaving" @save="handleSave" @close="selectedExpense = null" />
     </div>
 </template>
 
@@ -122,7 +122,7 @@ import type { Expense, ExpenseFilter, CreateExpenseRequest } from '../types/inde
 import { formatCurrency, formatDate } from '@/utils/helpers';
 
 const {
-    expenses, categories, isLoading, isSaving,
+    expenses, categories, accounts, isLoading, isSaving,
     fetchExpenses, fetchCategories, saveExpense, deleteExpense
 } = useExpenses();
 

@@ -57,6 +57,13 @@
                     </router-link>
                 </li>
 
+                <li>
+                    <router-link to="/accounts" active-class="active" class="flex items-center gap-3">
+                        <CreditCard :size="18" />
+                        Accounts
+                    </router-link>
+                </li>
+
                 <!-- Logout at bottom -->
                 <li class="mt-auto pt-6 border-t border-base-300">
                     <button @click="authStore.logout()" class="flex items-center gap-3 text-error hover:bg-error/10">
@@ -70,7 +77,7 @@
 </template>
 
 <script setup lang="ts">
-import { BanknoteArrowDown, ChartBarStacked, LayoutPanelLeft, LogOut, Menu, Receipt } from '@lucide/vue';
+import { BanknoteArrowDown, ChartBarStacked, CreditCard, LayoutPanelLeft, LogOut, Menu, Receipt } from '@lucide/vue';
 import { useAuthStore } from '../stores/auth';
 const authStore = useAuthStore();
 </script>

@@ -1,10 +1,11 @@
 import { ref } from 'vue';
 import api from '../services/api';
-import type { Expense, Category, ExpenseFilter, CreateExpenseRequest } from '../types';
+import type { Expense, Category, ExpenseFilter, CreateExpenseRequest, Account } from '../types';
 
 export function useExpenses() {
     const expenses = ref<Expense[]>([]);
     const categories = ref<Category[]>([]);
+    const accounts = ref<Account[]>([]);
     const isLoading = ref(false);
     const isSaving = ref(false);
 
@@ -17,6 +18,15 @@ export function useExpenses() {
             console.error('Failed to fetch expenses', error);
         } finally {
             isLoading.value = false;
+        }
+    };
+
+    const fetchAccounts = async () => {
+        try {
+            const { data } = await api.get('/api/accounts');
+            accounts.value = data.data;
+        } catch (error) {
+            console.error('Failed to fetch accounts', error);
         }
     };
 
@@ -60,11 +70,13 @@ export function useExpenses() {
 
     return {
         expenses,
+        accounts,
         categories,
         isLoading,
         isSaving,
         fetchExpenses,
         fetchCategories,
+        fetchAccounts,
         saveExpense,
         deleteExpense
     };

@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-type contextKey string
-
 type ContextKey string
 
 const UserIDKey ContextKey = "user_id"

@@ -133,7 +133,7 @@
                                     <td>{{ formatDate(exp.occurred_at) }}</td>
                                     <td>{{ exp.description }}</td>
                                     <td><span class="badge badge-ghost badge-sm">{{ getCategoryName(exp.category_id)
-                                    }}</span></td>
+                                            }}</span></td>
                                     <td class="text-right font-bold text-error">-{{ formatCurrency(exp.amount) }}</td>
                                 </tr>
                                 <tr v-if="recentExpenses.length === 0">
@@ -147,8 +147,8 @@
             </div>
         </template>
 
-        <ExpenseFormModal ref="expense-modal" :expense="null" :categories="categories" :is-saving="isSaving"
-            @save="handleSave" />
+        <ExpenseFormModal ref="expense-modal" :expense="null" :categories="categories" :accounts="accounts"
+            :is-saving="isSaving" @save="handleSave" />
     </div>
 </template>
 
@@ -179,6 +179,7 @@ const isLoading = ref(true);
 
 const {
     expenses, categories,
+    accounts,
     isSaving,
     saveExpense, fetchExpenses, fetchCategories
 } = useExpenses();

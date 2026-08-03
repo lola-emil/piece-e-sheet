@@ -28,6 +28,17 @@
                     </select>
                 </div>
 
+                <!-- Account -->
+                <div class="form-control">
+                    <label class="label"><span class="label-text">Account</span></label>
+                    <select v-model="form.account_id" class="select select-bordered w-full">
+                        <option :value="null">Select Account</option>
+                        <option v-for="acc in accounts" :key="acc.id" :value="acc.id">
+                            {{ acc.name }}
+                        </option>
+                    </select>
+                </div>
+
                 <!-- Date -->
                 <div class="form-control">
                     <label class="label"><span class="label-text">Date</span></label>
@@ -51,11 +62,12 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, useTemplateRef } from 'vue';
-import type { Expense, Category, CreateExpenseRequest } from '../types';
+import type { Expense, Category, CreateExpenseRequest, Account } from '../types';
 
 const props = defineProps<{
     expense: Expense | null;
     categories: Category[];
+    accounts: Account[];
     isSaving: boolean;
 }>();
 
@@ -72,6 +84,7 @@ const form = ref({
     description: '',
     amount: 0,
     category_id: null as string | null,
+    account_id: null as string | null,
     date: new Date().toISOString().split('T')[0]
 });
 
@@ -82,6 +95,7 @@ watch(() => props.expense, (newExp) => {
             description: newExp.description,
             amount: newExp.amount,
             category_id: newExp.category_id,
+            account_id: newExp.account_id,
             date: new Date(newExp.occurred_at).toISOString().split('T')[0]
         };
     } else {
@@ -89,17 +103,18 @@ watch(() => props.expense, (newExp) => {
             description: '',
             amount: 0,
             category_id: null,
+            account_id: null,
             date: new Date().toISOString().split('T')[0]
         };
     }
 }, { immediate: true });
 
 const handleSubmit = () => {
-    // Format date to ISO string for API
     const payload: CreateExpenseRequest = {
         description: form.value.description,
         amount: form.value.amount,
         category_id: form.value.category_id,
+        account_id: form.value.account_id,
         occurred_at: `${form.value.date}T12:00:00Z`
     };
     emit('save', payload);
