@@ -81,11 +81,11 @@ func (r *repo) Insert(ctx context.Context, e *Expense) error {
 	e.ID = uuid.New().String()
 
 	query := `
-		INSERT INTO expenses (id, user_id, category_id, description, amount, occurred_at) 
-		VALUES ($1, $2, $3, $4, $5, $6)
+		INSERT INTO expenses (id, user_id, category_id, account_id, description, amount, occurred_at) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING created_at, updated_at, revision
 	`
-	return r.db.QueryRowxContext(ctx, query, e.ID, e.UserID, e.CategoryID, e.Description, e.Amount, e.OccurredAt).Scan(
+	return r.db.QueryRowxContext(ctx, query, e.ID, e.UserID, e.CategoryID, e.AccountID, e.Description, e.Amount, e.OccurredAt).Scan(
 		&e.CreatedAt, &e.UpdatedAt, &e.Revision,
 	)
 }

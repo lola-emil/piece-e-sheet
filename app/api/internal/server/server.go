@@ -9,6 +9,7 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 
+	"api/internal/account"
 	"api/internal/auth"
 	"api/internal/category"
 	"api/internal/database"
@@ -38,6 +39,7 @@ func NewServer() *http.Server {
 	authRepo := auth.NewAuthRepository(dbInstance)
 	debtRepo := debt.NewDebtRepository(dbInstance)
 	paymentRepo := payment.NewPaymentRepository(dbInstance)
+	accountRepo := account.NewAccountRepository(dbInstance)
 
 	// Declare Server config
 	server := &http.Server{
@@ -48,6 +50,7 @@ func NewServer() *http.Server {
 			authRepo,
 			debtRepo,
 			paymentRepo,
+			accountRepo,
 		),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,

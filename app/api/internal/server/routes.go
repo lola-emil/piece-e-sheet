@@ -1,6 +1,7 @@
 package server
 
 import (
+	"api/internal/account"
 	"api/internal/auth"
 	"api/internal/category"
 	"api/internal/debt"
@@ -21,6 +22,7 @@ func (s *Server) RegisterRoutes(
 	authRepo auth.AuthRepository,
 	debtRepo debt.DebtRepository,
 	paymentRepo payment.PaymentRepository,
+	accountRepo account.AccountRepository,
 ) http.Handler {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -39,6 +41,7 @@ func (s *Server) RegisterRoutes(
 	authService := auth.NewAuthService(authRepo)
 	debtService := debt.NewDebtService(debtRepo)
 	paymentService := payment.NewPaymentService(paymentRepo)
+	accountService := account.NewAccountService(accountRepo)
 
 	// HANDLERS
 	categoryHandler := category.NewCategoryHandler(categoryService)
@@ -46,6 +49,7 @@ func (s *Server) RegisterRoutes(
 	authHandler := auth.NewAuthHandler(authService)
 	debtHandler := debt.NewDebtHandler(debtService)
 	paymentHandler := payment.NewPaymentHandler(paymentService)
+	accountHandler := account.NewAccountHandler(accountService)
 
 	auth.RegisterRoutes(r, authHandler)
 
@@ -56,6 +60,7 @@ func (s *Server) RegisterRoutes(
 		expense.RegisterRoutes(r, expenseHandler)
 		debt.RegisterRoutes(r, debtHandler)
 		payment.RegisterRoutes(r, paymentHandler)
+		account.RegisterRoutes(r, accountHandler)
 	})
 
 	r.Get("/", s.HelloWorldHandler)

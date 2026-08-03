@@ -6,6 +6,7 @@ type Expense struct {
 	ID          string     `db:"id" json:"id"`
 	UserID      string     `db:"user_id" json:"user_id"`
 	CategoryID  *string    `db:"category_id" json:"category_id"` // Nullable
+	AccountID   *string    `db:"account_id" json:"account_id"`
 	Description string     `db:"description" json:"description"`
 	Amount      float64    `db:"amount" json:"amount"`
 	OccurredAt  time.Time  `db:"occurred_at" json:"occurred_at"`
