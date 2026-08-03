@@ -8,7 +8,6 @@
                 <p class="text-center text-base-content/70 mb-6">Sign in to your account</p>
 
                 <form @submit.prevent="handleLogin" class="space-y-4">
-                    <!-- Email Input -->
                     <div class="form-control">
                         <label class="label">
                             <span class="label-text">Email</span>
@@ -17,7 +16,6 @@
                             class="input input-bordered w-full" required />
                     </div>
 
-                    <!-- Password Input -->
                     <div class="form-control">
                         <label class="label">
                             <span class="label-text">Password</span>
@@ -26,15 +24,14 @@
                             class="input input-bordered w-full" required />
                     </div>
 
-                    <!-- Error Message -->
                     <div v-if="error" class="alert alert-error text-sm py-2">
                         <span>{{ error }}</span>
                     </div>
 
-                    <!-- Submit Button -->
                     <div class="form-control mt-6">
-                        <button type="submit" class="btn btn-primary w-full" :class="{ 'loading': isLoading }"
+                        <button type="submit" class="btn btn-primary w-full"
                             :disabled="isLoading">
+                            <span v-if="isLoading" class="loading loading-spinner loading-xs"></span>
                             {{ isLoading ? 'Signing in...' : 'Sign In' }}
                         </button>
                     </div>
