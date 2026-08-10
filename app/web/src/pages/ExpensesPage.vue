@@ -123,7 +123,7 @@ import { formatCurrency, formatDate } from '@/utils/helpers';
 
 const {
     expenses, categories, accounts, isLoading, isSaving,
-    fetchExpenses, fetchCategories, saveExpense, deleteExpense
+    fetchAccounts,fetchExpenses, fetchCategories, saveExpense, deleteExpense
 } = useExpenses();
 
 const selectedExpense = ref<Expense | null>(null);
@@ -258,5 +258,6 @@ const getCategoryName = (id: string) => {
 onMounted(() => {
     fetchCategories();
     fetchExpenses();
+    fetchAccounts();
 });
 </script>
