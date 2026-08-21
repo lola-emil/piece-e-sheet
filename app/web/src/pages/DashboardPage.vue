@@ -3,6 +3,11 @@
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <h1 class="text-3xl font-bold">Dashboard</h1>
             <div class="flex gap-2">
+                <select class="select select-sm" v-model="selectedAccount">
+                    <option value="">All Accounts</option>
+                    <option value="-1">Not Specified</option>
+                    <option v-for="value in accounts" :value="value.id">{{ value.name }}</option>
+                </select>
                 <button class="btn btn-primary btn-sm" @click="expenseModal?.openModal">
                     <Plus :size="16" /> Add Expense
                 </button>
@@ -133,7 +138,7 @@
                                     <td>{{ formatDate(exp.occurred_at) }}</td>
                                     <td>{{ exp.description }}</td>
                                     <td><span class="badge badge-ghost badge-sm">{{ getCategoryName(exp.category_id)
-                                            }}</span></td>
+                                    }}</span></td>
                                     <td class="text-right font-bold text-error">-{{ formatCurrency(exp.amount) }}</td>
                                 </tr>
                                 <tr v-if="recentExpenses.length === 0">
@@ -153,7 +158,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, useTemplateRef } from 'vue';
+import { ref, computed, onMounted, useTemplateRef, watch } from 'vue';
 import { Line, Doughnut } from 'vue-chartjs';
 import {
     Chart as ChartJS,
@@ -213,6 +218,14 @@ const themeColors = () => ({
     baseContentMuted: getThemeColor('--color-base-content', 0.5),
     baseContentFaint: getThemeColor('--color-base-content', 0.1),
 });
+
+const selectedAccount = ref('');
+
+watch(selectedAccount, () => {
+    fetchExpenses({
+        account_id: selectedAccount.value
+    })
+})
 
 onMounted(async () => {
     try {

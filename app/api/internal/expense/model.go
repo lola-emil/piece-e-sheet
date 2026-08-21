@@ -17,6 +17,7 @@ type Expense struct {
 }
 
 type CreateExpenseRequest struct {
+	AccountID   *string   `json:"account_id"`
 	CategoryID  *string   `json:"category_id"` // Optional
 	Description string    `json:"description"`
 	Amount      float64   `json:"amount"`
@@ -24,6 +25,7 @@ type CreateExpenseRequest struct {
 }
 
 type UpdateExpenseRequest struct {
+	AccountID   *string   `json:"account_id"`
 	CategoryID  *string   `json:"category_id"`
 	Description string    `json:"description"`
 	Amount      float64   `json:"amount"`
@@ -32,6 +34,7 @@ type UpdateExpenseRequest struct {
 
 // ExpenseFilter is used for querying expenses
 type ExpenseFilter struct {
+	AccountID  *string
 	CategoryID *string
 	StartDate  *time.Time
 	EndDate    *time.Time

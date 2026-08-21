@@ -29,6 +29,7 @@ export interface Expense {
 }
 
 export interface ExpenseFilter {
+    account_id?: string;
     category_id?: string;
     start_date?: string;
     end_date?: string;

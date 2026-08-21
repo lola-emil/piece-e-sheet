@@ -47,6 +47,7 @@ func (s *service) Create(ctx context.Context, userID string, req *CreateExpenseR
 
 	expense := &Expense{
 		UserID:      userID,
+		AccountID:   req.AccountID,
 		CategoryID:  req.CategoryID,
 		Description: req.Description,
 		Amount:      req.Amount,

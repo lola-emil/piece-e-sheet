@@ -27,7 +27,7 @@ func NewExpenseRepository(db *sqlx.DB) ExpenseRepository {
 
 func (r *repo) FindAll(ctx context.Context, userID string, filter ExpenseFilter) ([]Expense, error) {
 	query := `
-		SELECT id, user_id, category_id, description, amount, occurred_at, 
+		SELECT id, user_id, account_id, category_id, description, amount, occurred_at, 
 			   created_at, updated_at, deleted_at, revision 
 		FROM expenses 
 		WHERE user_id = $1 AND deleted_at IS NULL
@@ -40,15 +40,29 @@ func (r *repo) FindAll(ctx context.Context, userID string, filter ExpenseFilter)
 		args = append(args, *filter.CategoryID)
 		argIndex++
 	}
+
 	if filter.StartDate != nil {
 		query += fmt.Sprintf(" AND occurred_at >= $%d", argIndex)
 		args = append(args, *filter.StartDate)
 		argIndex++
 	}
+
 	if filter.EndDate != nil {
 		query += fmt.Sprintf(" AND occurred_at <= $%d", argIndex)
 		args = append(args, *filter.EndDate)
 		argIndex++
+	}
+
+	fmt.Println(filter.AccountID)
+
+	if filter.AccountID != nil {
+		if *filter.AccountID == "-1" {
+			query += " AND account_id IS NULL"
+		} else if *filter.AccountID != "" {
+			query += fmt.Sprintf(" AND account_id = $%d", argIndex)
+			args = append(args, *filter.AccountID)
+			argIndex++
+		}
 	}
 
 	query += " ORDER BY occurred_at DESC"
@@ -80,12 +94,19 @@ func (r *repo) FindByID(ctx context.Context, expenseID string, userID string) (*
 func (r *repo) Insert(ctx context.Context, e *Expense) error {
 	e.ID = uuid.New().String()
 
+	if e.AccountID == nil {
+		fmt.Println("AccountID: nil")
+	} else {
+		fmt.Printf("AccountID value: %q\n", *e.AccountID)
+	}
+
 	query := `
 		INSERT INTO expenses (id, user_id, category_id, account_id, description, amount, occurred_at) 
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING created_at, updated_at, revision
 	`
-	return r.db.QueryRowxContext(ctx, query, e.ID, e.UserID, e.CategoryID, e.AccountID, e.Description, e.Amount, e.OccurredAt).Scan(
+
+	return r.db.QueryRowxContext(ctx, query, e.ID, e.UserID, e.CategoryID, *e.AccountID, e.Description, e.Amount, e.OccurredAt).Scan(
 		&e.CreatedAt, &e.UpdatedAt, &e.Revision,
 	)
 }

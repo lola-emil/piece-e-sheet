@@ -56,9 +56,17 @@ func (h *handler) FindAll(w http.ResponseWriter, r *http.Request) {
 	// Parse filters
 	filter := ExpenseFilter{}
 	catID := r.URL.Query().Get("category_id")
+
 	if catID != "" {
 		filter.CategoryID = &catID
 	}
+
+	accountId := r.URL.Query().Get("account_id")
+
+	if accountId != "" {
+		filter.AccountID = &accountId
+	}
+
 	filter.StartDate = parseTimeParam(r, "start_date")
 	filter.EndDate = parseTimeParam(r, "end_date")
 
