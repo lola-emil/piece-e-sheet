@@ -181,7 +181,10 @@ const {
     expenses, categories,
     accounts,
     isSaving,
-    saveExpense, fetchExpenses, fetchCategories
+    saveExpense,
+    fetchExpenses,
+    fetchCategories,
+    fetchAccounts
 } = useExpenses();
 
 const expenseModal = useTemplateRef('expense-modal')
@@ -215,7 +218,8 @@ onMounted(async () => {
     try {
         await Promise.all([
             fetchExpenses(),
-            fetchCategories()
+            fetchCategories(),
+            fetchAccounts(),
         ]);
     } catch (error) {
         console.error('Failed to load dashboard data', error);
