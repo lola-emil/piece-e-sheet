@@ -4,6 +4,19 @@
             <h3 class="font-bold text-lg">{{ isEdit ? 'Edit Expense' : 'Add Expense' }}</h3>
 
             <form @submit.prevent="handleSubmit" class="space-y-4 mt-4">
+                <!-- Type Toggle -->
+                <div class="flex gap-2">
+                    <button type="button" class="btn flex-1"
+                        :class="form.type === 'expense' ? 'btn-error text-white' : 'btn-outline'"
+                        @click="form.type = 'expense'">
+                        Expense
+                    </button>
+                    <button type="button" class="btn flex-1"
+                        :class="form.type === 'income' ? 'btn-success text-white' : 'btn-outline'"
+                        @click="form.type = 'income'">
+                        Income
+                    </button>
+                </div>
                 <!-- Description -->
                 <div class="form-control">
                     <label class="label"><span class="label-text">Description</span></label>
@@ -62,7 +75,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, useTemplateRef } from 'vue';
-import type { Expense, Category, CreateExpenseRequest, Account } from '../types';
+import type { Expense, Category, CreateExpenseRequest, Account, TransactionType } from '../types';
 
 const props = defineProps<{
     expense: Expense | null;
@@ -84,6 +97,7 @@ const form = ref({
     description: '',
     amount: 0,
     category_id: null as string | null,
+    type: 'expense' as TransactionType,
     account_id: null as string | null,
     date: new Date().toISOString().split('T')[0]
 });
@@ -95,6 +109,7 @@ watch(() => props.expense, (newExp) => {
             description: newExp.description,
             amount: newExp.amount,
             category_id: newExp.category_id,
+            type: newExp.type,
             account_id: newExp.account_id,
             date: new Date(newExp.occurred_at).toISOString().split('T')[0]
         };
@@ -104,6 +119,7 @@ watch(() => props.expense, (newExp) => {
             amount: 0,
             category_id: null,
             account_id: null,
+            type: 'expense',
             date: new Date().toISOString().split('T')[0]
         };
     }
@@ -114,6 +130,7 @@ const handleSubmit = () => {
         description: form.value.description,
         amount: form.value.amount,
         category_id: form.value.category_id,
+        type: form.value.type,
         account_id: form.value.account_id,
         occurred_at: `${form.value.date}T12:00:00Z`
     };

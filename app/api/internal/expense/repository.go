@@ -27,7 +27,7 @@ func NewExpenseRepository(db *sqlx.DB) ExpenseRepository {
 
 func (r *repo) FindAll(ctx context.Context, userID string, filter ExpenseFilter) ([]Expense, error) {
 	query := `
-		SELECT id, user_id, account_id, category_id, description, amount, occurred_at, 
+		SELECT id, user_id, account_id, category_id, description, type, amount, occurred_at, 
 			   created_at, updated_at, deleted_at, revision 
 		FROM expenses 
 		WHERE user_id = $1 AND deleted_at IS NULL
@@ -74,7 +74,7 @@ func (r *repo) FindAll(ctx context.Context, userID string, filter ExpenseFilter)
 
 func (r *repo) FindByID(ctx context.Context, expenseID string, userID string) (*Expense, error) {
 	query := `
-		SELECT id, user_id, category_id, description, amount, occurred_at, 
+		SELECT id, user_id, category_id, description, type, amount, occurred_at, 
 			   created_at, updated_at, deleted_at, revision 
 		FROM expenses 
 		WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
@@ -101,12 +101,12 @@ func (r *repo) Insert(ctx context.Context, e *Expense) error {
 	}
 
 	query := `
-		INSERT INTO expenses (id, user_id, category_id, account_id, description, amount, occurred_at) 
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		INSERT INTO expenses (id, user_id, category_id, account_id, description, type, amount, occurred_at) 
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		RETURNING created_at, updated_at, revision
 	`
 
-	return r.db.QueryRowxContext(ctx, query, e.ID, e.UserID, e.CategoryID, *e.AccountID, e.Description, e.Amount, e.OccurredAt).Scan(
+	return r.db.QueryRowxContext(ctx, query, e.ID, e.UserID, e.CategoryID, e.AccountID, e.Description, e.Type, e.Amount, e.OccurredAt).Scan(
 		&e.CreatedAt, &e.UpdatedAt, &e.Revision,
 	)
 }
@@ -116,14 +116,15 @@ func (r *repo) UpdateByID(ctx context.Context, e *Expense) error {
 
 	query := `
 		UPDATE expenses 
-		SET category_id = $1, description = $2, amount = $3, occurred_at = $4, 
-			updated_at = NOW(), revision = $5
-		WHERE id = $6 AND user_id = $7 AND deleted_at IS NULL AND revision = $8
+		SET category_id = $1, description = $2, type = $3 amount = $4, occurred_at = $5, 
+			updated_at = NOW(), revision = $6, account_id = $7
+		WHERE id = $8 AND user_id = $9 AND deleted_at IS NULL AND revision = $10
 		RETURNING updated_at, revision
 	`
-	return r.db.QueryRowxContext(ctx, query, e.CategoryID, e.Description, e.Amount, e.OccurredAt, newRevision, e.ID, e.UserID, e.Revision).Scan(
+	return r.db.QueryRowxContext(ctx, query, e.CategoryID, e.Description, e.Type, e.Amount, e.OccurredAt, newRevision, e.AccountID, e.ID, e.UserID, e.Revision).Scan(
 		&e.UpdatedAt, &e.Revision,
 	)
+
 }
 
 func (r *repo) DeleteByID(ctx context.Context, expenseID string, userID string) error {

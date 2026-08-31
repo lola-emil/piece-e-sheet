@@ -8,6 +8,7 @@ type Expense struct {
 	CategoryID  *string    `db:"category_id" json:"category_id"` // Nullable
 	AccountID   *string    `db:"account_id" json:"account_id"`
 	Description string     `db:"description" json:"description"`
+	Type        string     `db:"type" json:"type"`
 	Amount      float64    `db:"amount" json:"amount"`
 	OccurredAt  time.Time  `db:"occurred_at" json:"occurred_at"`
 	CreatedAt   time.Time  `db:"created_at" json:"created_at"`
@@ -19,6 +20,7 @@ type Expense struct {
 type CreateExpenseRequest struct {
 	AccountID   *string   `json:"account_id"`
 	CategoryID  *string   `json:"category_id"` // Optional
+	Type        string    `json:"type"`
 	Description string    `json:"description"`
 	Amount      float64   `json:"amount"`
 	OccurredAt  time.Time `json:"occurred_at"`
@@ -27,6 +29,7 @@ type CreateExpenseRequest struct {
 type UpdateExpenseRequest struct {
 	AccountID   *string   `json:"account_id"`
 	CategoryID  *string   `json:"category_id"`
+	Type        string    `json:"type"`
 	Description string    `json:"description"`
 	Amount      float64   `json:"amount"`
 	OccurredAt  time.Time `json:"occurred_at"`

@@ -15,6 +15,7 @@ export interface AuthResponse {
 }
 
 
+export type TransactionType = 'expense' | 'income';
 export interface Expense {
     id: string;
     user_id: string;
@@ -22,6 +23,7 @@ export interface Expense {
     account_id: string | null;
     description: string;
     amount: number;
+    type: TransactionType;
     occurred_at: string;
     created_at: string;
     updated_at: string;
@@ -39,6 +41,7 @@ export interface CreateExpenseRequest {
     category_id: string | null;
     account_id: string | null;
     description: string;
+    type: TransactionType;
     amount: number;
     occurred_at: string;
 }
@@ -46,6 +49,7 @@ export interface CreateExpenseRequest {
 export interface UpdateExpenseRequest {
     category_id?: string | null;
     account_id?: string | null;
+    type: TransactionType;
     description: string;
     amount: number;
     occurred_at: string;
@@ -117,15 +121,15 @@ export interface CreatePaymentRequest {
 
 
 export interface Account {
-  id: string;
-  user_id: string;
-  name: string;
-  type: string;
-  created_at: string;
-  updated_at: string;
+    id: string;
+    user_id: string;
+    name: string;
+    type: string;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface CreateAccountRequest {
-  name: string;
-  type: string;
+    name: string;
+    type: string;
 }

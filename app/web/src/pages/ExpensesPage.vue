@@ -95,8 +95,9 @@
                                 </span>
                                 <span v-else class="badge badge-ghost">Uncategorized</span>
                             </td>
-                            <td class="text-right font-bold text-error whitespace-nowrap">
-                                -{{ formatCurrency(exp.amount) }}
+                            <td class="text-right font-bold whitespace-nowrap"
+                                :class="exp.type === 'income' ? 'text-success' : 'text-error'">
+                                {{ exp.type === 'income' ? '+' : '-' }}{{ formatCurrency(exp.amount) }}
                             </td>
                             <td class="text-center whitespace-nowrap">
                                 <button class="btn btn-xs btn-ghost" @click="openEditModal(exp)">Edit</button>
@@ -123,7 +124,7 @@ import { formatCurrency, formatDate } from '@/utils/helpers';
 
 const {
     expenses, categories, accounts, isLoading, isSaving,
-    fetchAccounts,fetchExpenses, fetchCategories, saveExpense, deleteExpense
+    fetchAccounts, fetchExpenses, fetchCategories, saveExpense, deleteExpense
 } = useExpenses();
 
 const selectedExpense = ref<Expense | null>(null);

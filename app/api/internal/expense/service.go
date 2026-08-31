@@ -45,11 +45,19 @@ func (s *service) Create(ctx context.Context, userID string, req *CreateExpenseR
 		return nil, errors.New("amount must be greater than 0")
 	}
 
+	if req.Type == "" {
+		req.Type = "expense"
+	}
+	if req.Type != "expense" && req.Type != "income" {
+		return nil, errors.New("invalid type, must be 'expense' or 'income'")
+	}
+
 	expense := &Expense{
 		UserID:      userID,
 		AccountID:   req.AccountID,
 		CategoryID:  req.CategoryID,
 		Description: req.Description,
+		Type:        req.Type,
 		Amount:      req.Amount,
 		OccurredAt:  req.OccurredAt,
 	}
@@ -69,6 +77,13 @@ func (s *service) Update(ctx context.Context, id string, userID string, req *Upd
 		return nil, errors.New("amount must be greater than 0")
 	}
 
+	if req.Type == "" {
+		req.Type = "expense"
+	}
+	if req.Type != "expense" && req.Type != "income" {
+		return nil, errors.New("invalid type, must be 'expense' or 'income'")
+	}
+
 	expense, err := s.expenseRepo.FindByID(ctx, id, userID)
 	if err != nil {
 		return nil, err
@@ -79,6 +94,8 @@ func (s *service) Update(ctx context.Context, id string, userID string, req *Upd
 
 	expense.CategoryID = req.CategoryID
 	expense.Description = req.Description
+	expense.AccountID = req.AccountID
+	expense.Type = req.Type
 	expense.Amount = req.Amount
 	expense.OccurredAt = req.OccurredAt
 
