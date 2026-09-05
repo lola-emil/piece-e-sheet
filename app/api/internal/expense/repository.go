@@ -19,6 +19,7 @@ type ExpenseRepository interface {
 	Insert(ctx context.Context, e *Expense) error
 	UpdateByID(ctx context.Context, e *Expense) error
 	DeleteByID(ctx context.Context, expenseID string, userID string) error
+	Count(ctx context.Context, userID string, filter ExpenseFilter) (int, error)
 }
 
 func NewExpenseRepository(db *sqlx.DB) ExpenseRepository {
@@ -27,49 +28,50 @@ func NewExpenseRepository(db *sqlx.DB) ExpenseRepository {
 
 func (r *repo) FindAll(ctx context.Context, userID string, filter ExpenseFilter) ([]Expense, error) {
 	query := `
-		SELECT id, user_id, account_id, category_id, description, type, amount, occurred_at, 
-			   created_at, updated_at, deleted_at, revision 
-		FROM expenses 
-		WHERE user_id = $1 AND deleted_at IS NULL
-	`
+        SELECT id, user_id, account_id, category_id, description, type, amount, occurred_at,
+               created_at, updated_at, deleted_at, revision
+        FROM expenses
+        WHERE user_id = $1 AND deleted_at IS NULL
+    `
 	args := []interface{}{userID}
-	argIndex := 2 // Next placeholder will be $2
+	argIndex := 2
 
-	if filter.CategoryID != nil && *filter.CategoryID != "" {
-		query += fmt.Sprintf(" AND category_id = $%d", argIndex)
-		args = append(args, *filter.CategoryID)
+	query, args, argIndex = appendFilters(query, args, argIndex, filter)
+
+	orderBy := "occurred_at DESC, id DESC"
+	switch filter.SortBy {
+	case "date_desc":
+		orderBy = "occurred_at DESC, id DESC"
+	case "date_asc":
+		orderBy = "occurred_at ASC, id ASC"
+	case "amount_desc":
+		orderBy = "amount DESC, occurred_at DESC"
+	case "amount_asc":
+		orderBy = "amount ASC, occurred_at DESC"
+	case "description_asc":
+		orderBy = "LOWER(description) ASC, occurred_at DESC"
+	}
+
+	query += " ORDER BY " + orderBy
+
+	if filter.Limit > 0 {
+		query += fmt.Sprintf(" LIMIT $%d", argIndex)
+		args = append(args, filter.Limit)
+		argIndex++
+	}
+	if filter.Offset > 0 {
+		query += fmt.Sprintf(" OFFSET $%d", argIndex)
+		args = append(args, filter.Offset)
 		argIndex++
 	}
 
-	if filter.StartDate != nil {
-		query += fmt.Sprintf(" AND occurred_at >= $%d", argIndex)
-		args = append(args, *filter.StartDate)
-		argIndex++
-	}
-
-	if filter.EndDate != nil {
-		query += fmt.Sprintf(" AND occurred_at <= $%d", argIndex)
-		args = append(args, *filter.EndDate)
-		argIndex++
-	}
-
-	if filter.AccountID != nil {
-		if *filter.AccountID == "-1" {
-			query += " AND account_id IS NULL"
-		} else if *filter.AccountID != "" {
-			query += fmt.Sprintf(" AND account_id = $%d", argIndex)
-			args = append(args, *filter.AccountID)
-			argIndex++
-		}
-	}
-
-	query += " ORDER BY occurred_at DESC"
+	fmt.Println("%s", query)
+	fmt.Println(filter.StartDate)
 
 	var expenses []Expense
 	err := r.db.SelectContext(ctx, &expenses, query, args...)
 	return expenses, err
 }
-
 func (r *repo) FindByID(ctx context.Context, expenseID string, userID string) (*Expense, error) {
 	query := `
 		SELECT id, user_id, account_id, category_id, description, type, amount, occurred_at,
@@ -144,4 +146,59 @@ func (r *repo) DeleteByID(ctx context.Context, expenseID string, userID string) 
 		return sql.ErrNoRows
 	}
 	return nil
+}
+
+func (r *repo) Count(ctx context.Context, userID string, filter ExpenseFilter) (int, error) {
+	query := `SELECT COUNT(*) FROM expenses WHERE user_id = $1 AND deleted_at IS NULL`
+	args := []interface{}{userID}
+	argIndex := 2
+
+	query, args, argIndex = appendFilters(query, args, argIndex, filter)
+
+	var count int
+	err := r.db.QueryRowxContext(ctx, query, args...).Scan(&count)
+	return count, err
+}
+
+func appendFilters(query string, args []interface{}, argIndex int, filter ExpenseFilter) (string, []interface{}, int) {
+	if filter.CategoryID != nil && *filter.CategoryID != "" {
+		query += fmt.Sprintf(" AND category_id = $%d", argIndex)
+		args = append(args, *filter.CategoryID)
+		argIndex++
+	}
+
+	if filter.StartDate != nil {
+		query += fmt.Sprintf(" AND occurred_at >= $%d", argIndex)
+		args = append(args, *filter.StartDate)
+		argIndex++
+	}
+
+	if filter.EndDate != nil {
+		query += fmt.Sprintf(" AND occurred_at <= $%d", argIndex)
+		args = append(args, *filter.EndDate)
+		argIndex++
+	}
+
+	if filter.AccountID != nil {
+		if *filter.AccountID == "-1" {
+			query += " AND account_id IS NULL"
+		} else if *filter.AccountID != "" {
+			query += fmt.Sprintf(" AND account_id = $%d", argIndex)
+			args = append(args, *filter.AccountID)
+			argIndex++
+		}
+	}
+
+	if filter.MinAmount != nil {
+		query += fmt.Sprintf(" AND amount >= $%d", argIndex)
+		args = append(args, *filter.MinAmount)
+		argIndex++
+	}
+
+	if filter.MaxAmount != nil {
+		query += fmt.Sprintf(" AND amount <= $%d", argIndex)
+		args = append(args, *filter.MaxAmount)
+		argIndex++
+	}
+	return query, args, argIndex
 }

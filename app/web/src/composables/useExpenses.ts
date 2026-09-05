@@ -8,12 +8,21 @@ export function useExpenses() {
     const accounts = ref<Account[]>([]);
     const isLoading = ref(false);
     const isSaving = ref(false);
+    const totalCount = ref(0);
+    const currentPage = ref(1);
+    const pageSize = ref(20)
 
-    const fetchExpenses = async (filter: ExpenseFilter = {}) => {
+
+    const fetchExpenses = async (filter: Partial<ExpenseFilter> = {}) => {
         isLoading.value = true;
         try {
+            filter.limit = pageSize.value;
+            filter.offset = ((currentPage.value - 1) * pageSize.value);
+
             const { data } = await api.get('/api/expenses', { params: filter });
+
             expenses.value = data.data ?? [];
+            totalCount.value = data.count ?? 0;
         } catch (error) {
             console.error('Failed to fetch expenses', error);
         } finally {
@@ -74,6 +83,9 @@ export function useExpenses() {
         categories,
         isLoading,
         isSaving,
+        totalCount,
+        currentPage,
+        pageSize,
         fetchExpenses,
         fetchCategories,
         fetchAccounts,

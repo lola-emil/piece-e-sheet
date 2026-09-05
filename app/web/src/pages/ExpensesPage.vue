@@ -81,12 +81,12 @@
                                 <span class="loading loading-spinner loading-lg"></span>
                             </td>
                         </tr>
-                        <tr v-else-if="filteredExpenses.length === 0">
+                        <tr v-else-if="expenses.length === 0">
                             <td colspan="5" class="text-center py-8 text-base-content/50">
                                 No expenses found.
                             </td>
                         </tr>
-                        <tr v-for="exp in filteredExpenses" :key="exp.id">
+                        <tr v-for="exp in expenses" :key="exp.id">
                             <td class="whitespace-nowrap">{{ formatDate(exp.occurred_at) }}</td>
                             <td>{{ exp.description }}</td>
                             <td>
@@ -108,6 +108,45 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- Pagination Footer -->
+            <div v-if="totalCount > 0"
+                class="flex flex-col sm:flex-row items-center justify-between gap-4 p-4 border-t border-base-200">
+                <!-- Info + Page Size -->
+                <div class="flex items-center gap-4 text-sm">
+                    <span class="text-base-content/70">
+                        Showing {{ rangeStart }}–{{ rangeEnd }} of {{ totalCount }}
+                    </span>
+                    <label class="flex items-center gap-2">
+                        <span class="text-base-content/70">Rows:</span>
+                        <select v-model.number="pageSize" class="select select-bordered select-sm"
+                            @change="goToPage(1)">
+                            <option :value="10">10</option>
+                            <option :value="20">20</option>
+                            <option :value="50">50</option>
+                            <option :value="100">100</option>
+                        </select>
+                    </label>
+                </div>
+
+                <!-- Page Buttons -->
+                <div class="join">
+                    <button class="join-item btn btn-sm" :disabled="currentPage === 1" @click="goToPage(1)">«</button>
+                    <button class="join-item btn btn-sm" :disabled="currentPage === 1"
+                        @click="goToPage(currentPage - 1)">‹</button>
+
+                    <button v-for="page in visiblePages" :key="page" class="join-item btn btn-sm"
+                        :class="{ 'btn-active': page === currentPage }" :disabled="page === '...'"
+                        @click="page !== '...' && goToPage(page)">
+                        {{ page }}
+                    </button>
+
+                    <button class="join-item btn btn-sm" :disabled="currentPage === totalPages"
+                        @click="goToPage(currentPage + 1)">›</button>
+                    <button class="join-item btn btn-sm" :disabled="currentPage === totalPages"
+                        @click="goToPage(totalPages)">»</button>
+                </div>
+            </div>
         </div>
 
         <ExpenseFormModal ref="expense-modal" :expense="selectedExpense" :categories="categories" :accounts="accounts"
@@ -116,16 +155,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, useTemplateRef } from 'vue';
+import { ref, computed, onMounted, useTemplateRef, watch } from 'vue';
 import { useExpenses } from '../composables/useExpenses';
 import ExpenseFormModal from '../components/ExpenseFormModal.vue';
 import type { Expense, ExpenseFilter, CreateExpenseRequest } from '../types/index';
 import { formatCurrency, formatDate } from '@/utils/helpers';
 
 const {
-    expenses, categories, accounts, isLoading, isSaving,
+    expenses, categories, accounts, isLoading, isSaving, totalCount, currentPage, pageSize,
     fetchAccounts, fetchExpenses, fetchCategories, saveExpense, deleteExpense
 } = useExpenses();
+
+
 
 const selectedExpense = ref<Expense | null>(null);
 const searchQuery = ref('');
@@ -147,45 +188,6 @@ const activeFilterCount = computed(() => {
     if (filters.value.start_date) count++;
     if (filters.value.end_date) count++;
     return count;
-});
-
-const filteredExpenses = computed(() => {
-    const q = searchQuery.value.toLowerCase().trim();
-    const { category_id, start_date, end_date, min_amount, max_amount, sort_by } = filters.value;
-
-    let result = expenses.value.filter(exp => {
-        if (q && !exp.description.toLowerCase().includes(q)) return false;
-        if (category_id !== undefined && exp.category_id !== category_id) return false;
-        if (start_date && new Date(exp.occurred_at) < new Date(start_date)) return false;
-        if (end_date) {
-            const end = new Date(end_date);
-            end.setHours(23, 59, 59, 999);
-            if (new Date(exp.occurred_at) > end) return false;
-        }
-        if (min_amount !== undefined && min_amount !== null && exp.amount < min_amount) return false;
-        if (max_amount !== undefined && max_amount !== null && exp.amount > max_amount) return false;
-        return true;
-    });
-
-    switch (sort_by) {
-        case 'date_asc':
-            result.sort((a, b) => new Date(a.occurred_at).getTime() - new Date(b.occurred_at).getTime());
-            break;
-        case 'date_desc':
-            result.sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
-            break;
-        case 'amount_asc':
-            result.sort((a, b) => a.amount - b.amount);
-            break;
-        case 'amount_desc':
-            result.sort((a, b) => b.amount - a.amount);
-            break;
-        case 'description_asc':
-            result.sort((a, b) => a.description.localeCompare(b.description));
-            break;
-    }
-
-    return result;
 });
 
 const applyDatePreset = () => {
@@ -256,9 +258,50 @@ const getCategoryName = (id: string) => {
     return cat ? cat.name : 'Unknown';
 };
 
+
+function goToPage(page: number | string): void {
+    if (typeof page == "number") {
+        if (page < 1 || page > totalPages.value || page === currentPage.value) return
+        currentPage.value = page
+    } else {
+        currentPage.value = 1;
+    }
+
+    console.log("Page", page)
+}
+
+const visiblePages = computed<(number | string)[]>(() => {
+    const total = totalPages.value
+    const current = currentPage.value
+    const delta = 1
+
+    if (total <= 7) {
+        return Array.from({ length: total }, (_, i) => i + 1)
+    }
+
+    const pages: (number | string)[] = []
+    const left = Math.max(2, current - delta)
+    const right = Math.min(total - 1, current + delta)
+
+    pages.push(1)
+    if (left > 2) pages.push('...')
+    for (let i = left; i <= right; i++) pages.push(i)
+    if (right < total - 1) pages.push('...')
+    pages.push(total)
+
+    return pages
+})
+
+const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageSize.value)))
+
+const rangeStart = computed(() => totalCount.value === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1)
+const rangeEnd = computed(() => Math.min(currentPage.value * pageSize.value, totalCount.value))
+
+watch([currentPage, pageSize, filters], () => { fetchExpenses(filters.value) }, { deep: true })
+
 onMounted(() => {
     fetchCategories();
-    fetchExpenses();
+    fetchExpenses(filters.value);
     fetchAccounts();
 });
 </script>

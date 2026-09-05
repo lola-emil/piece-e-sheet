@@ -35,10 +35,14 @@ type UpdateExpenseRequest struct {
 	OccurredAt  time.Time `json:"occurred_at"`
 }
 
-// ExpenseFilter is used for querying expenses
 type ExpenseFilter struct {
-	AccountID  *string
 	CategoryID *string
+	AccountID  *string
 	StartDate  *time.Time
 	EndDate    *time.Time
+	MinAmount  *float64
+	MaxAmount  *float64
+	SortBy     string
+	Limit      int
+	Offset     int
 }

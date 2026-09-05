@@ -4,6 +4,7 @@ import (
 	"api/internal/auth"
 	"encoding/json"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -22,22 +23,28 @@ func respondError(w http.ResponseWriter, status int, message string) {
 }
 
 func getUserID(r *http.Request) string {
-	// Use auth.UserIDKey instead of the local userIDKey
 	if uid, ok := r.Context().Value(auth.UserIDKey).(string); ok {
 		return uid
 	}
 	return ""
 }
 
-// Helper to parse optional time from query params
-func parseTimeParam(r *http.Request, param string) *time.Time {
+func parseDateParam(r *http.Request, param string, endOfDay bool) *time.Time {
 	val := r.URL.Query().Get(param)
 	if val == "" {
 		return nil
 	}
-	t, err := time.Parse(time.RFC3339, val)
+
+	t, err := time.Parse("2006-01-02", val)
 	if err != nil {
+		if t2, err2 := time.Parse(time.RFC3339, val); err2 == nil {
+			return &t2
+		}
 		return nil
+	}
+
+	if endOfDay {
+		t = t.Add(24*time.Hour - time.Nanosecond)
 	}
 	return &t
 }
@@ -53,29 +60,36 @@ func NewExpenseHandler(service ExpenseService) *handler {
 func (h *handler) FindAll(w http.ResponseWriter, r *http.Request) {
 	userID := getUserID(r)
 
-	// Parse filters
 	filter := ExpenseFilter{}
-	catID := r.URL.Query().Get("category_id")
 
-	if catID != "" {
-		filter.CategoryID = &catID
+	if v := r.URL.Query().Get("category_id"); v != "" {
+		filter.CategoryID = &v
+	}
+	if v := r.URL.Query().Get("account_id"); v != "" {
+		filter.AccountID = &v
 	}
 
-	accountId := r.URL.Query().Get("account_id")
+	filter.StartDate = parseDateParam(r, "start_date", false)
+	filter.EndDate = parseDateParam(r, "end_date", true)
 
-	if accountId != "" {
-		filter.AccountID = &accountId
-	}
+	filter.MinAmount = parseFloatParam(r, "min_amount")
+	filter.MaxAmount = parseFloatParam(r, "max_amount")
 
-	filter.StartDate = parseTimeParam(r, "start_date")
-	filter.EndDate = parseTimeParam(r, "end_date")
+	filter.SortBy = r.URL.Query().Get("sort_by")
 
-	expenses, err := h.service.FindAll(r.Context(), userID, filter)
+	filter.Limit = parseIntParam(r, "limit", 0)
+	filter.Offset = parseIntParam(r, "offset", 0)
+
+	expenses, count, err := h.service.FindAll(r.Context(), userID, filter)
 	if err != nil {
 		respondError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondJSON(w, http.StatusOK, map[string]interface{}{"data": expenses})
+
+	respondJSON(w, http.StatusOK, map[string]interface{}{
+		"data":  expenses,
+		"count": count,
+	})
 }
 
 func (h *handler) FindByID(w http.ResponseWriter, r *http.Request) {
@@ -134,4 +148,30 @@ func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	respondJSON(w, http.StatusOK, map[string]string{"message": "expense deleted"})
+}
+
+func parseFloatParam(r *http.Request, key string) *float64 {
+	v := r.URL.Query().Get(key)
+	if v == "" {
+		return nil
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return nil
+	}
+	return &f
+}
+
+func parseIntParam(r *http.Request, key string, defaultValue int) int {
+	val := r.URL.Query().Get(key)
+	if val == "" {
+		return defaultValue
+	}
+
+	num, err := strconv.Atoi(val)
+	if err != nil {
+		return defaultValue
+	}
+
+	return num
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 )
 
 type service struct {
@@ -11,7 +12,7 @@ type service struct {
 }
 
 type ExpenseService interface {
-	FindAll(ctx context.Context, userID string, filter ExpenseFilter) ([]Expense, error)
+	FindAll(ctx context.Context, userID string, filter ExpenseFilter) ([]Expense, int, error)
 	FindByID(ctx context.Context, id string, userID string) (*Expense, error)
 	Create(ctx context.Context, userID string, req *CreateExpenseRequest) (*Expense, error)
 	Update(ctx context.Context, id string, userID string, req *UpdateExpenseRequest) (*Expense, error)
@@ -22,8 +23,33 @@ func NewExpenseService(expenseRepo ExpenseRepository) ExpenseService {
 	return &service{expenseRepo: expenseRepo}
 }
 
-func (s *service) FindAll(ctx context.Context, userID string, filter ExpenseFilter) ([]Expense, error) {
-	return s.expenseRepo.FindAll(ctx, userID, filter)
+func (s *service) FindAll(ctx context.Context, userID string, filter ExpenseFilter) ([]Expense, int, error) {
+	const defaultLimit = 25
+	const maxLimit = 200
+
+	if filter.Limit <= 0 {
+		filter.Limit = defaultLimit
+	}
+
+	if filter.Limit > maxLimit {
+		filter.Limit = maxLimit
+	}
+
+	if filter.Offset < 0 {
+		filter.Offset = 0
+	}
+
+	expenses, err := s.expenseRepo.FindAll(ctx, userID, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("finding expenses: %w", err)
+	}
+
+	count, err := s.expenseRepo.Count(ctx, userID, filter)
+	if err != nil {
+		return nil, 0, fmt.Errorf("counting expenses: %w", err)
+	}
+
+	return expenses, count, nil
 }
 
 func (s *service) FindByID(ctx context.Context, id string, userID string) (*Expense, error) {
