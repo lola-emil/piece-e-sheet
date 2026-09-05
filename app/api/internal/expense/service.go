@@ -38,6 +38,10 @@ func (s *service) FindByID(ctx context.Context, id string, userID string) (*Expe
 }
 
 func (s *service) Create(ctx context.Context, userID string, req *CreateExpenseRequest) (*Expense, error) {
+	if req == nil {
+		return nil, errors.New("request body is required")
+	}
+
 	if req.Description == "" {
 		return nil, errors.New("description is required")
 	}
@@ -45,10 +49,16 @@ func (s *service) Create(ctx context.Context, userID string, req *CreateExpenseR
 		return nil, errors.New("amount must be greater than 0")
 	}
 
-	if req.Type == "" {
-		req.Type = "expense"
+	if req.OccurredAt.IsZero() {
+		return nil, errors.New("occurred_at is required")
 	}
-	if req.Type != "expense" && req.Type != "income" {
+
+	expenseType := req.Type
+	if expenseType == "" {
+		expenseType = "expense"
+	}
+
+	if expenseType != "expense" && expenseType != "income" {
 		return nil, errors.New("invalid type, must be 'expense' or 'income'")
 	}
 
@@ -57,7 +67,7 @@ func (s *service) Create(ctx context.Context, userID string, req *CreateExpenseR
 		AccountID:   req.AccountID,
 		CategoryID:  req.CategoryID,
 		Description: req.Description,
-		Type:        req.Type,
+		Type:        expenseType,
 		Amount:      req.Amount,
 		OccurredAt:  req.OccurredAt,
 	}
@@ -70,11 +80,20 @@ func (s *service) Create(ctx context.Context, userID string, req *CreateExpenseR
 }
 
 func (s *service) Update(ctx context.Context, id string, userID string, req *UpdateExpenseRequest) (*Expense, error) {
+	if req == nil {
+		return nil, errors.New("request body is required")
+	}
+
 	if req.Description == "" {
 		return nil, errors.New("description is required")
 	}
+
 	if req.Amount <= 0 {
 		return nil, errors.New("amount must be greater than 0")
+	}
+
+	if req.OccurredAt.IsZero() {
+		return nil, errors.New("occurred_at is required")
 	}
 
 	if req.Type == "" {
@@ -85,11 +104,13 @@ func (s *service) Update(ctx context.Context, id string, userID string, req *Upd
 	}
 
 	expense, err := s.expenseRepo.FindByID(ctx, id, userID)
+
 	if err != nil {
 		return nil, err
 	}
-	if expense == nil {
-		return nil, errors.New("expense not found")
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, errors.New("expense was modified concurrently (conflict)")
 	}
 
 	expense.CategoryID = req.CategoryID
