@@ -53,8 +53,6 @@ func (r *repo) FindAll(ctx context.Context, userID string, filter ExpenseFilter)
 		argIndex++
 	}
 
-	fmt.Println(filter.AccountID)
-
 	if filter.AccountID != nil {
 		if *filter.AccountID == "-1" {
 			query += " AND account_id IS NULL"
@@ -74,8 +72,8 @@ func (r *repo) FindAll(ctx context.Context, userID string, filter ExpenseFilter)
 
 func (r *repo) FindByID(ctx context.Context, expenseID string, userID string) (*Expense, error) {
 	query := `
-		SELECT id, user_id, category_id, description, type, amount, occurred_at, 
-			   created_at, updated_at, deleted_at, revision 
+		SELECT id, user_id, account_id, category_id, description, type, amount, occurred_at,
+			created_at, updated_at, deleted_at, revision
 		FROM expenses 
 		WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
 	`
@@ -116,7 +114,7 @@ func (r *repo) UpdateByID(ctx context.Context, e *Expense) error {
 
 	query := `
 		UPDATE expenses 
-		SET category_id = $1, description = $2, type = $3 amount = $4, occurred_at = $5, 
+		SET category_id = $1, description = $2, type = $3, amount = $4, occurred_at = $5, 
 			updated_at = NOW(), revision = $6, account_id = $7
 		WHERE id = $8 AND user_id = $9 AND deleted_at IS NULL AND revision = $10
 		RETURNING updated_at, revision
