@@ -68,17 +68,19 @@ func (h *handler) FindAll(w http.ResponseWriter, r *http.Request) {
 	if v := r.URL.Query().Get("account_id"); v != "" {
 		filter.AccountID = &v
 	}
-
 	filter.StartDate = parseDateParam(r, "start_date", false)
 	filter.EndDate = parseDateParam(r, "end_date", true)
-
 	filter.MinAmount = parseFloatParam(r, "min_amount")
 	filter.MaxAmount = parseFloatParam(r, "max_amount")
-
 	filter.SortBy = r.URL.Query().Get("sort_by")
 
-	filter.Limit = parseIntParam(r, "limit", 0)
-	filter.Offset = parseIntParam(r, "offset", 0)
+	filter.NoPagination =
+		r.URL.Query().Get("no_pagination") == "true"
+
+	if !filter.NoPagination {
+		filter.Limit = parseIntParam(r, "limit", 0)
+		filter.Offset = parseIntParam(r, "offset", 0)
+	}
 
 	expenses, count, err := h.service.FindAll(r.Context(), userID, filter)
 	if err != nil {

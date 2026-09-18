@@ -27,16 +27,16 @@ func (s *service) FindAll(ctx context.Context, userID string, filter ExpenseFilt
 	const defaultLimit = 25
 	const maxLimit = 200
 
-	if filter.Limit <= 0 {
-		filter.Limit = defaultLimit
-	}
-
-	if filter.Limit > maxLimit {
-		filter.Limit = maxLimit
-	}
-
-	if filter.Offset < 0 {
-		filter.Offset = 0
+	if !filter.NoPagination {
+		if filter.Limit <= 0 {
+			filter.Limit = defaultLimit
+		}
+		if filter.Limit > maxLimit {
+			filter.Limit = maxLimit
+		}
+		if filter.Offset < 0 {
+			filter.Offset = 0
+		}
 	}
 
 	expenses, err := s.expenseRepo.FindAll(ctx, userID, filter)
@@ -44,9 +44,14 @@ func (s *service) FindAll(ctx context.Context, userID string, filter ExpenseFilt
 		return nil, 0, fmt.Errorf("finding expenses: %w", err)
 	}
 
-	count, err := s.expenseRepo.Count(ctx, userID, filter)
-	if err != nil {
-		return nil, 0, fmt.Errorf("counting expenses: %w", err)
+	var count int
+	if !filter.NoPagination {
+		count, err = s.expenseRepo.Count(ctx, userID, filter)
+		if err != nil {
+			return nil, 0, fmt.Errorf("counting expenses: %w", err)
+		}
+	} else {
+		count = len(expenses)
 	}
 
 	return expenses, count, nil

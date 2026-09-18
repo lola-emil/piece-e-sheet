@@ -33,11 +33,12 @@ func (r *repo) FindAll(ctx context.Context, userID string, filter ExpenseFilter)
         FROM expenses
         WHERE user_id = $1 AND deleted_at IS NULL
     `
-	args := []interface{}{userID}
+	args := []any{userID}
 	argIndex := 2
 
 	query, args, argIndex = appendFilters(query, args, argIndex, filter)
 
+	// ORDER BY logic (same as before)
 	orderBy := "occurred_at DESC, id DESC"
 	switch filter.SortBy {
 	case "date_desc":
@@ -51,27 +52,26 @@ func (r *repo) FindAll(ctx context.Context, userID string, filter ExpenseFilter)
 	case "description_asc":
 		orderBy = "LOWER(description) ASC, occurred_at DESC"
 	}
-
 	query += " ORDER BY " + orderBy
 
-	if filter.Limit > 0 {
-		query += fmt.Sprintf(" LIMIT $%d", argIndex)
-		args = append(args, filter.Limit)
-		argIndex++
+	if !filter.NoPagination {
+		if filter.Limit > 0 {
+			query += fmt.Sprintf(" LIMIT $%d", argIndex)
+			args = append(args, filter.Limit)
+			argIndex++
+		}
+		if filter.Offset > 0 {
+			query += fmt.Sprintf(" OFFSET $%d", argIndex)
+			args = append(args, filter.Offset)
+			argIndex++
+		}
 	}
-	if filter.Offset > 0 {
-		query += fmt.Sprintf(" OFFSET $%d", argIndex)
-		args = append(args, filter.Offset)
-		argIndex++
-	}
-
-	fmt.Println("%s", query)
-	fmt.Println(filter.StartDate)
 
 	var expenses []Expense
 	err := r.db.SelectContext(ctx, &expenses, query, args...)
 	return expenses, err
 }
+
 func (r *repo) FindByID(ctx context.Context, expenseID string, userID string) (*Expense, error) {
 	query := `
 		SELECT id, user_id, account_id, category_id, description, type, amount, occurred_at,

@@ -251,6 +251,10 @@ const handleSave = async (payload: CreateExpenseRequest) => {
     if (success) {
         expenseModal.value?.closeModal();
     }
+
+    filters.value = {
+        sort_by: 'date_desc',
+    };
 };
 
 const getCategoryName = (id: string) => {

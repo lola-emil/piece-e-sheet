@@ -10,7 +10,7 @@ export function useExpenses() {
     const isSaving = ref(false);
     const totalCount = ref(0);
     const currentPage = ref(1);
-    const pageSize = ref(20)
+    const pageSize = ref(20);
 
 
     const fetchExpenses = async (filter: Partial<ExpenseFilter> = {}) => {

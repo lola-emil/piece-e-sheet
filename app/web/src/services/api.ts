@@ -1,8 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-    // baseURL: 'https://expenseapi.renslab.xyz',
-    baseURL: 'http://localhost:8081',
+    baseURL: import.meta.env.VITE_API_URL,
 });
 
 api.interceptors.request.use((config) => {

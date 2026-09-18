@@ -30,13 +30,6 @@ export interface Expense {
     revision: number;
 }
 
-export interface ExpenseFilter {
-    account_id?: string;
-    category_id?: string;
-    start_date?: string;
-    end_date?: string;
-}
-
 export interface CreateExpenseRequest {
     category_id: string | null;
     account_id: string | null;
@@ -56,6 +49,7 @@ export interface UpdateExpenseRequest {
 }
 
 export interface ExpenseFilter {
+    account_id?: string;
     category_id?: string;
     start_date?: string;
     end_date?: string;
@@ -64,6 +58,7 @@ export interface ExpenseFilter {
     min_amount?: number | null;
     max_amount?: number | null;
     sort_by?: string;
+    no_pagination?: boolean;
 }
 
 

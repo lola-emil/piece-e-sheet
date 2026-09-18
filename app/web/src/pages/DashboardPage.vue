@@ -230,7 +230,7 @@ watch(selectedAccount, () => {
 onMounted(async () => {
     try {
         await Promise.all([
-            fetchExpenses(),
+            fetchExpenses({no_pagination: true}),
             fetchCategories(),
             fetchAccounts(),
         ]);
