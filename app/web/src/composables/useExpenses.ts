@@ -11,15 +11,19 @@ export function useExpenses() {
     const totalCount = ref(0);
     const currentPage = ref(1);
     const pageSize = ref(20);
+    const filters = ref<ExpenseFilter & {
+        min_amount?: number;
+        max_amount?: number;
+        sort_by?: string;
+    }>({
+        sort_by: 'date_desc',
+    });
 
 
-    const fetchExpenses = async (filter: Partial<ExpenseFilter> = {}) => {
+    const fetchExpenses = async () => {
         isLoading.value = true;
         try {
-            filter.limit = pageSize.value;
-            filter.offset = ((currentPage.value - 1) * pageSize.value);
-
-            const { data } = await api.get('/api/expenses', { params: filter });
+            const { data } = await api.get('/api/expenses', { params: filters.value });
 
             expenses.value = data.data ?? [];
             totalCount.value = data.count ?? 0;
@@ -86,6 +90,7 @@ export function useExpenses() {
         totalCount,
         currentPage,
         pageSize,
+        filters,
         fetchExpenses,
         fetchCategories,
         fetchAccounts,

@@ -42,6 +42,7 @@ type ExpenseFilter struct {
 	EndDate      *time.Time
 	MinAmount    *float64
 	MaxAmount    *float64
+	Search       string
 	SortBy       string
 	Limit        int
 	Offset       int

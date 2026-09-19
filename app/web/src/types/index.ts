@@ -58,7 +58,9 @@ export interface ExpenseFilter {
     min_amount?: number | null;
     max_amount?: number | null;
     sort_by?: string;
+    current_page?: number;
     no_pagination?: boolean;
+    search?: string
 }
 
 

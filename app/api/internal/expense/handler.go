@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -68,6 +69,8 @@ func (h *handler) FindAll(w http.ResponseWriter, r *http.Request) {
 	if v := r.URL.Query().Get("account_id"); v != "" {
 		filter.AccountID = &v
 	}
+
+	filter.Search = strings.TrimSpace(r.URL.Query().Get("search"))
 	filter.StartDate = parseDateParam(r, "start_date", false)
 	filter.EndDate = parseDateParam(r, "end_date", true)
 	filter.MinAmount = parseFloatParam(r, "min_amount")

@@ -186,6 +186,7 @@ const {
     expenses, categories,
     accounts,
     isSaving,
+    filters,
     saveExpense,
     fetchExpenses,
     fetchCategories,
@@ -222,15 +223,17 @@ const themeColors = () => ({
 const selectedAccount = ref('');
 
 watch(selectedAccount, () => {
-    fetchExpenses({
-        account_id: selectedAccount.value
-    })
+    fetchExpenses()
 })
 
 onMounted(async () => {
     try {
+        filters.value = {
+            no_pagination: true
+        };
+        
         await Promise.all([
-            fetchExpenses({no_pagination: true}),
+            fetchExpenses(),
             fetchCategories(),
             fetchAccounts(),
         ]);

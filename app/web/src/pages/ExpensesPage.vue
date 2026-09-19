@@ -10,7 +10,7 @@
         <div class="card bg-base-100 shadow-sm">
             <div class="card-body p-4">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <input v-model="searchQuery" type="text" placeholder="Search description..."
+                    <input v-model="filters.search" type="text" placeholder="Search description..."
                         class="input input-bordered w-full" />
 
                     <select v-model="filters.category_id" class="select select-bordered w-full">
@@ -163,25 +163,16 @@ import { formatCurrency, formatDate } from '@/utils/helpers';
 
 const {
     expenses, categories, accounts, isLoading, isSaving, totalCount, currentPage, pageSize,
+    filters,
     fetchAccounts, fetchExpenses, fetchCategories, saveExpense, deleteExpense
 } = useExpenses();
 
-
-
 const selectedExpense = ref<Expense | null>(null);
-const searchQuery = ref('');
 const datePreset = ref('');
-const filters = ref<ExpenseFilter & {
-    min_amount?: number;
-    max_amount?: number;
-    sort_by?: string;
-}>({
-    sort_by: 'date_desc',
-});
 
 const activeFilterCount = computed(() => {
     let count = 0;
-    if (searchQuery.value) count++;
+    if (filters.value.search) count++;
     if (filters.value.category_id !== undefined) count++;
     if (filters.value.min_amount !== undefined && filters.value.min_amount !== null) count++;
     if (filters.value.max_amount !== undefined && filters.value.max_amount !== null) count++;
@@ -231,7 +222,7 @@ const applyDatePreset = () => {
 const expenseModal = useTemplateRef<InstanceType<typeof ExpenseFormModal>>('expense-modal');
 
 const clearFilters = () => {
-    searchQuery.value = '';
+    filters.value.search = '';
     datePreset.value = '';
     filters.value = { sort_by: 'date_desc' };
 };
@@ -251,10 +242,6 @@ const handleSave = async (payload: CreateExpenseRequest) => {
     if (success) {
         expenseModal.value?.closeModal();
     }
-
-    filters.value = {
-        sort_by: 'date_desc',
-    };
 };
 
 const getCategoryName = (id: string) => {
@@ -301,11 +288,28 @@ const totalPages = computed(() => Math.max(1, Math.ceil(totalCount.value / pageS
 const rangeStart = computed(() => totalCount.value === 0 ? 0 : (currentPage.value - 1) * pageSize.value + 1)
 const rangeEnd = computed(() => Math.min(currentPage.value * pageSize.value, totalCount.value))
 
-watch([currentPage, pageSize, filters], () => { fetchExpenses(filters.value) }, { deep: true })
+watch([currentPage, pageSize, filters], (newVal, old) => {
+    if (filters.value.search && newVal[2].search != old[2].search) {
+        filters.value.limit = pageSize.value;
+        filters.value.offset = 0;
+    }
+    
+    fetchExpenses()
+}, { deep: true })
+
+watch([currentPage], () => {
+    filters.value.limit = pageSize.value;
+    filters.value.offset = ((currentPage.value - 1) * pageSize.value);
+})
 
 onMounted(() => {
+
+    filters.value = {
+        sort_by: 'date_desc',
+    };
+
     fetchCategories();
-    fetchExpenses(filters.value);
+    fetchExpenses();
     fetchAccounts();
 });
 </script>

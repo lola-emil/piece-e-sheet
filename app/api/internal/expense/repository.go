@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -38,7 +39,6 @@ func (r *repo) FindAll(ctx context.Context, userID string, filter ExpenseFilter)
 
 	query, args, argIndex = appendFilters(query, args, argIndex, filter)
 
-	// ORDER BY logic (same as before)
 	orderBy := "occurred_at DESC, id DESC"
 	switch filter.SortBy {
 	case "date_desc":
@@ -52,6 +52,7 @@ func (r *repo) FindAll(ctx context.Context, userID string, filter ExpenseFilter)
 	case "description_asc":
 		orderBy = "LOWER(description) ASC, occurred_at DESC"
 	}
+
 	query += " ORDER BY " + orderBy
 
 	if !filter.NoPagination {
@@ -200,5 +201,20 @@ func appendFilters(query string, args []interface{}, argIndex int, filter Expens
 		args = append(args, *filter.MaxAmount)
 		argIndex++
 	}
+
+	if filter.Search != "" {
+		escaped := escapeLike(filter.Search)
+		query += fmt.Sprintf(" AND description ILIKE $%d", argIndex)
+		args = append(args, "%"+escaped+"%")
+		argIndex++
+	}
+
 	return query, args, argIndex
+}
+
+func escapeLike(s string) string {
+	s = strings.ReplaceAll(s, `\`, `\\`)
+	s = strings.ReplaceAll(s, `%`, `\%`)
+	s = strings.ReplaceAll(s, `_`, `\_`)
+	return s
 }
