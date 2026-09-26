@@ -21,6 +21,7 @@ type ExpenseRepository interface {
 	UpdateByID(ctx context.Context, e *Expense) error
 	DeleteByID(ctx context.Context, expenseID string, userID string) error
 	Count(ctx context.Context, userID string, filter ExpenseFilter) (int, error)
+	GetSummary(ctx context.Context, userID string, filter ExpenseFilter) (*ExpenseSummary, error)
 }
 
 func NewExpenseRepository(db *sqlx.DB) ExpenseRepository {
@@ -151,7 +152,7 @@ func (r *repo) DeleteByID(ctx context.Context, expenseID string, userID string) 
 
 func (r *repo) Count(ctx context.Context, userID string, filter ExpenseFilter) (int, error) {
 	query := `SELECT COUNT(*) FROM expenses WHERE user_id = $1 AND deleted_at IS NULL`
-	args := []interface{}{userID}
+	args := []any{userID}
 	argIndex := 2
 
 	query, args, argIndex = appendFilters(query, args, argIndex, filter)
@@ -161,7 +162,44 @@ func (r *repo) Count(ctx context.Context, userID string, filter ExpenseFilter) (
 	return count, err
 }
 
-func appendFilters(query string, args []interface{}, argIndex int, filter ExpenseFilter) (string, []interface{}, int) {
+func (r *repo) GetSummary(ctx context.Context, userID string, filter ExpenseFilter) (*ExpenseSummary, error) {
+	query := `
+		WITH FilteredExpenses AS (
+			SELECT id, description, amount, occurred_at
+			FROM expenses
+			WHERE user_id = $1 AND deleted_at IS NULL
+	`
+
+	args := []any{userID}
+	argIndex := 2
+
+	filterClauses, newArgs, newIndex := appendFilters("", args, argIndex, filter)
+
+	query += filterClauses
+	args = newArgs
+	argIndex = newIndex
+
+	query += `
+		)
+		SELECT 
+			COUNT(*) as count,
+			COALESCE(SUM(amount), 0) as total,
+			COALESCE(AVG(amount), 0) as average,
+			(SELECT description FROM FilteredExpenses ORDER BY amount DESC, occurred_at DESC LIMIT 1) as largest_description,
+			(SELECT amount FROM FilteredExpenses ORDER BY amount DESC, occurred_at DESC LIMIT 1) as largest_amount
+		FROM FilteredExpenses;
+	`
+
+	var summary ExpenseSummary
+	err := r.db.GetContext(ctx, &summary, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return &summary, nil
+}
+
+func appendFilters(query string, args []any, argIndex int, filter ExpenseFilter) (string, []interface{}, int) {
 	if filter.CategoryID != nil && *filter.CategoryID != "" {
 		query += fmt.Sprintf(" AND category_id = $%d", argIndex)
 		args = append(args, *filter.CategoryID)

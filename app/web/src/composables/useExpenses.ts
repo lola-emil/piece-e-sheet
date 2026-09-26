@@ -1,9 +1,10 @@
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import api from '../services/api';
-import type { Expense, Category, ExpenseFilter, CreateExpenseRequest, Account } from '../types';
+import type { Expense, Category, ExpenseFilter, CreateExpenseRequest, Account, ExpenseSummary } from '../types';
 
 export function useExpenses() {
     const expenses = ref<Expense[]>([]);
+    const expenseSummary = ref<ExpenseSummary>();
     const categories = ref<Category[]>([]);
     const accounts = ref<Account[]>([]);
     const isLoading = ref(false);
@@ -33,6 +34,15 @@ export function useExpenses() {
             isLoading.value = false;
         }
     };
+
+const fetchFilteredSummary = async () => {
+    try {
+        const { data } = await api.get('/api/expenses/summary', { params: filters.value });
+        expenseSummary.value = data;
+    } catch (error) {
+        console.error('Failed to fetch summaries', error);
+    }
+};
 
     const fetchAccounts = async () => {
         try {
@@ -81,8 +91,13 @@ export function useExpenses() {
         }
     };
 
+watch(() => filters.value, async () => {
+    fetchFilteredSummary();
+}, { immediate: true, deep: true });
+
     return {
         expenses,
+        expenseSummary,
         accounts,
         categories,
         isLoading,
@@ -91,7 +106,9 @@ export function useExpenses() {
         currentPage,
         pageSize,
         filters,
+
         fetchExpenses,
+        fetchFilteredSummary,
         fetchCategories,
         fetchAccounts,
         saveExpense,

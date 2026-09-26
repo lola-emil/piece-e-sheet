@@ -48,3 +48,11 @@ type ExpenseFilter struct {
 	Offset       int
 	NoPagination bool
 }
+
+type ExpenseSummary struct {
+	Count              int64    `db:"count" json:"count"`
+	Total              float64  `db:"total" json:"total"`
+	Average            float64  `db:"average" json:"average"`
+	LargestAmount      *float64 `db:"largest_amount" json:"largest_amount"`
+	LargestDescription *string  `db:"largest_description" json:"largest_description"`
+}

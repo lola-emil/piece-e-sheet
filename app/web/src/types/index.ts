@@ -29,6 +29,13 @@ export interface Expense {
     updated_at: string;
     revision: number;
 }
+export interface ExpenseSummary {
+  count: number;
+  total: number;
+  average: number;
+  largest_amount: number;
+  largest_description: string | null;
+}
 
 export interface CreateExpenseRequest {
     category_id: string | null;

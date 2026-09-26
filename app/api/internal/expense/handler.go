@@ -11,7 +11,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func respondJSON(w http.ResponseWriter, status int, payload interface{}) {
+func respondJSON(w http.ResponseWriter, status int, payload any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	if payload != nil {
@@ -179,4 +179,32 @@ func parseIntParam(r *http.Request, key string, defaultValue int) int {
 	}
 
 	return num
+}
+
+func (h *handler) GetSummary(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(auth.UserIDKey).(string)
+
+	filter := ExpenseFilter{}
+
+	if v := r.URL.Query().Get("category_id"); v != "" {
+		filter.CategoryID = &v
+	}
+	if v := r.URL.Query().Get("account_id"); v != "" {
+		filter.AccountID = &v
+	}
+
+	filter.Search = strings.TrimSpace(r.URL.Query().Get("search"))
+	filter.StartDate = parseDateParam(r, "start_date", false)
+	filter.EndDate = parseDateParam(r, "end_date", true)
+	filter.MinAmount = parseFloatParam(r, "min_amount")
+	filter.MaxAmount = parseFloatParam(r, "max_amount")
+	filter.SortBy = r.URL.Query().Get("sort_by")
+
+	summary, err := h.service.GetSummary(r.Context(), userID, filter)
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondJSON(w, http.StatusOK, summary)
 }

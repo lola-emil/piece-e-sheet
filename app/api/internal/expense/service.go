@@ -17,6 +17,7 @@ type ExpenseService interface {
 	Create(ctx context.Context, userID string, req *CreateExpenseRequest) (*Expense, error)
 	Update(ctx context.Context, id string, userID string, req *UpdateExpenseRequest) (*Expense, error)
 	Delete(ctx context.Context, id string, userID string) error
+	GetSummary(ctx context.Context, userID string, filter ExpenseFilter) (*ExpenseSummary, error)
 }
 
 func NewExpenseService(expenseRepo ExpenseRepository) ExpenseService {
@@ -170,4 +171,8 @@ func (s *service) Delete(ctx context.Context, id string, userID string) error {
 		return err
 	}
 	return nil
+}
+
+func (s *service) GetSummary(ctx context.Context, userID string, filter ExpenseFilter) (*ExpenseSummary, error) {
+	return s.expenseRepo.GetSummary(ctx, userID, filter)
 }
