@@ -91,7 +91,7 @@ const fetchFilteredSummary = async () => {
         }
     };
 
-watch(() => filters.value, async () => {
+watch(() => expenses.value, async () => {
     fetchFilteredSummary();
 }, { immediate: true, deep: true });
 
