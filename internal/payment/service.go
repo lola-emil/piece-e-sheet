@@ -21,7 +21,7 @@ func (s *service) GetByDebtID(ctx context.Context, debtID, userID string) ([]Pay
 }
 
 func (s *service) Record(ctx context.Context, userID string, req *CreatePaymentRequest) (*Payment, error) {
-	if req.Amount <= 0 {
+	if req.Amount.IsNegative() || req.Amount.IsZero() {
 		return nil, errors.New("amount must be > 0")
 	}
 

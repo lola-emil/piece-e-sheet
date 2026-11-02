@@ -1,6 +1,11 @@
 package account
 
-import "time"
+import (
+	"api/internal/store"
+	"fmt"
+	"strings"
+	"time"
+)
 
 type Account struct {
 	ID        string     `db:"id" json:"id"`
@@ -21,4 +26,27 @@ type CreateAccountRequest struct {
 type UpdateAccountRequest struct {
 	Name string `json:"name"`
 	Type string `json:"type"`
+}
+
+const maxNameLen = 100
+
+func validAccountType(t string) bool {
+	switch t {
+	case "checking", "savings", "credit":
+		return true
+	}
+	return false
+}
+
+func (r *CreateAccountRequest) Validate() error {
+	r.Name = strings.TrimSpace(r.Name)
+	switch {
+	case r.Name == "":
+		return fmt.Errorf("%w: name is required", store.ErrInvalidInput)
+	case len(r.Name) > maxNameLen:
+		return fmt.Errorf("%w: name exceeds %d characters", store.ErrInvalidInput, maxNameLen)
+	case !validAccountType(r.Type):
+		return fmt.Errorf("%w: unknown account type %q", store.ErrInvalidInput, r.Type)
+	}
+	return nil
 }

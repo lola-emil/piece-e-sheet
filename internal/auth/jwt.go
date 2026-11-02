@@ -8,7 +8,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// In production, load this from environment variables!
 var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 
 type Claims struct {
@@ -17,7 +16,7 @@ type Claims struct {
 }
 
 func GenerateToken(userID string) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour) // Token valid for 24 hours
+	expirationTime := time.Now().Add(24 * time.Hour)
 
 	claims := &Claims{
 		UserID: userID,

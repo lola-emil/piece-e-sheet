@@ -2,6 +2,7 @@ package expense
 
 import (
 	"api/internal/auth"
+	"api/internal/respond"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -10,25 +11,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 )
-
-func respondJSON(w http.ResponseWriter, status int, payload any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	if payload != nil {
-		json.NewEncoder(w).Encode(payload)
-	}
-}
-
-func respondError(w http.ResponseWriter, status int, message string) {
-	respondJSON(w, status, map[string]string{"error": message})
-}
-
-func getUserID(r *http.Request) string {
-	if uid, ok := r.Context().Value(auth.UserIDKey).(string); ok {
-		return uid
-	}
-	return ""
-}
 
 func parseDateParam(r *http.Request, param string, endOfDay bool) *time.Time {
 	val := r.URL.Query().Get(param)
@@ -59,7 +41,11 @@ func NewExpenseHandler(service ExpenseService) *handler {
 }
 
 func (h *handler) FindAll(w http.ResponseWriter, r *http.Request) {
-	userID := getUserID(r)
+	uid, ok := auth.UserIDFromRequest(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
 
 	filter := ExpenseFilter{}
 
@@ -85,13 +71,13 @@ func (h *handler) FindAll(w http.ResponseWriter, r *http.Request) {
 		filter.Offset = parseIntParam(r, "offset", 0)
 	}
 
-	expenses, count, err := h.service.FindAll(r.Context(), userID, filter)
+	expenses, count, err := h.service.FindAll(r.Context(), uid, filter)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
+		respond.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	respondJSON(w, http.StatusOK, map[string]interface{}{
+	respond.JSON(w, http.StatusOK, map[string]interface{}{
 		"data":  expenses,
 		"count": count,
 	})
@@ -99,60 +85,76 @@ func (h *handler) FindAll(w http.ResponseWriter, r *http.Request) {
 
 func (h *handler) FindByID(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	userID := getUserID(r)
-
-	expense, err := h.service.FindByID(r.Context(), id, userID)
-	if err != nil {
-		respondError(w, http.StatusNotFound, err.Error())
+	uid, ok := auth.UserIDFromRequest(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	respondJSON(w, http.StatusOK, map[string]interface{}{"data": expense})
+
+	expense, err := h.service.FindByID(r.Context(), id, uid)
+	if err != nil {
+		respond.Error(w, http.StatusNotFound, err.Error())
+		return
+	}
+	respond.JSON(w, http.StatusOK, map[string]interface{}{"data": expense})
 }
 
 func (h *handler) Create(w http.ResponseWriter, r *http.Request) {
-	userID := getUserID(r)
+	uid, ok := auth.UserIDFromRequest(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
 	var req CreateExpenseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusBadRequest, "Invalid request body")
+		respond.Error(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	expense, err := h.service.Create(r.Context(), userID, &req)
+	expense, err := h.service.Create(r.Context(), uid, &req)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
+		respond.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondJSON(w, http.StatusCreated, map[string]interface{}{"data": expense})
+	respond.JSON(w, http.StatusCreated, map[string]interface{}{"data": expense})
 }
 
 func (h *handler) Update(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	userID := getUserID(r)
+	uid, ok := auth.UserIDFromRequest(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
 
 	var req UpdateExpenseRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		respondError(w, http.StatusBadRequest, "Invalid request body")
+		respond.Error(w, http.StatusBadRequest, "Invalid request body")
 		return
 	}
 
-	expense, err := h.service.Update(r.Context(), id, userID, &req)
+	expense, err := h.service.Update(r.Context(), id, uid, &req)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
+		respond.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondJSON(w, http.StatusOK, map[string]interface{}{"data": expense})
+	respond.JSON(w, http.StatusOK, map[string]interface{}{"data": expense})
 }
 
 func (h *handler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	userID := getUserID(r)
-
-	err := h.service.Delete(r.Context(), id, userID)
-	if err != nil {
-		respondError(w, http.StatusNotFound, err.Error())
+	uid, ok := auth.UserIDFromRequest(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "unauthorized")
 		return
 	}
-	respondJSON(w, http.StatusOK, map[string]string{"message": "expense deleted"})
+
+	err := h.service.Delete(r.Context(), id, uid)
+	if err != nil {
+		respond.Error(w, http.StatusNotFound, err.Error())
+		return
+	}
+	respond.JSON(w, http.StatusOK, map[string]string{"message": "expense deleted"})
 }
 
 func parseFloatParam(r *http.Request, key string) *float64 {
@@ -182,8 +184,11 @@ func parseIntParam(r *http.Request, key string, defaultValue int) int {
 }
 
 func (h *handler) GetSummary(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(auth.UserIDKey).(string)
-
+	uid, ok := auth.UserIDFromRequest(r)
+	if !ok {
+		respond.Error(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
 	filter := ExpenseFilter{}
 
 	if v := r.URL.Query().Get("category_id"); v != "" {
@@ -200,11 +205,11 @@ func (h *handler) GetSummary(w http.ResponseWriter, r *http.Request) {
 	filter.MaxAmount = parseFloatParam(r, "max_amount")
 	filter.SortBy = r.URL.Query().Get("sort_by")
 
-	summary, err := h.service.GetSummary(r.Context(), userID, filter)
+	summary, err := h.service.GetSummary(r.Context(), uid, filter)
 	if err != nil {
-		respondError(w, http.StatusInternalServerError, err.Error())
+		respond.Error(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	respondJSON(w, http.StatusOK, summary)
+	respond.JSON(w, http.StatusOK, summary)
 }

@@ -77,7 +77,7 @@ func (s *service) Create(ctx context.Context, userID string, req *CreateExpenseR
 	if req.Description == "" {
 		return nil, errors.New("description is required")
 	}
-	if req.Amount <= 0 {
+	if req.Amount.IsNegative() || req.Amount.IsZero() {
 		return nil, errors.New("amount must be greater than 0")
 	}
 
@@ -120,7 +120,7 @@ func (s *service) Update(ctx context.Context, id string, userID string, req *Upd
 		return nil, errors.New("description is required")
 	}
 
-	if req.Amount <= 0 {
+	if req.Amount.IsNegative() || req.Amount.IsZero() {
 		return nil, errors.New("amount must be greater than 0")
 	}
 

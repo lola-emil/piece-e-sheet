@@ -12,10 +12,10 @@ type service struct {
 
 type CategoryService interface {
 	FindAll(ctx context.Context, userID string) ([]Category, error)
-	FindByID(ctx context.Context, id string) (*Category, error)
+	FindByID(ctx context.Context, id string, userID string) (*Category, error)
 	Create(ctx context.Context, userID string, req *CreateCategoryRequest) (*Category, error)
-	Update(ctx context.Context, id string, req *UpdateCategoryRequest) (*Category, error)
-	Delete(ctx context.Context, id string) error
+	Update(ctx context.Context, id string, req *UpdateCategoryRequest, userID string) (*Category, error)
+	Delete(ctx context.Context, id string, userID string) error
 }
 
 func NewCategoryService(categoryRepo CategoryRepository) CategoryService {
@@ -26,8 +26,8 @@ func (s *service) FindAll(ctx context.Context, userID string) ([]Category, error
 	return s.categoryRepo.FindAll(ctx, userID)
 }
 
-func (s *service) FindByID(ctx context.Context, id string) (*Category, error) {
-	category, err := s.categoryRepo.FindByID(ctx, id)
+func (s *service) FindByID(ctx context.Context, id string, userID string) (*Category, error) {
+	category, err := s.categoryRepo.FindByID(ctx, id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -49,11 +49,11 @@ func (s *service) Create(ctx context.Context, userID string, req *CreateCategory
 	return category, nil
 }
 
-func (s *service) Update(ctx context.Context, id string, req *UpdateCategoryRequest) (*Category, error) {
+func (s *service) Update(ctx context.Context, id string, req *UpdateCategoryRequest, userID string) (*Category, error) {
 	if req.Name == "" {
 		return nil, errors.New("name is required")
 	}
-	category, err := s.categoryRepo.FindByID(ctx, id)
+	category, err := s.categoryRepo.FindByID(ctx, id, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -72,8 +72,8 @@ func (s *service) Update(ctx context.Context, id string, req *UpdateCategoryRequ
 	return category, nil
 }
 
-func (s *service) Delete(ctx context.Context, id string) error {
-	err := s.categoryRepo.DeleteByID(ctx, id)
+func (s *service) Delete(ctx context.Context, id string, userID string) error {
+	err := s.categoryRepo.DeleteByID(ctx, id, userID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return errors.New("category not found")

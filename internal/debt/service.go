@@ -1,14 +1,16 @@
-// debt/service.go
 package debt
 
 import (
+	"api/internal/store"
 	"context"
-	"database/sql"
-	"errors"
+	"fmt"
 	"time"
+
+	"github.com/shopspring/decimal"
 )
 
 type service struct{ repo DebtRepository }
+
 type DebtService interface {
 	FindAll(ctx context.Context, userID string) ([]Debt, error)
 	Create(ctx context.Context, userID string, req *CreateDebtRequest) (*Debt, error)
@@ -23,18 +25,39 @@ func (s *service) FindAll(ctx context.Context, userID string) ([]Debt, error) {
 }
 
 func (s *service) Create(ctx context.Context, userID string, req *CreateDebtRequest) (*Debt, error) {
-	if req.Amount <= 0 {
-		return nil, errors.New("amount must be > 0")
+	if req == nil {
+		return nil, fmt.Errorf("%w: request body is required", store.ErrInvalidInput)
 	}
-	d := &Debt{UserID: userID, PersonName: req.PersonName, Description: req.Description, Amount: req.Amount, Type: req.Type, DueDate: req.DueDate}
-	err := s.repo.Insert(ctx, d)
-	return d, err
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
+	d := &Debt{
+		UserID:      userID,
+		PersonName:  req.PersonName,
+		Description: req.Description,
+		Amount:      req.Amount,
+		Type:        req.Type,
+		DueDate:     req.DueDate,
+	}
+
+	if err := s.repo.Insert(ctx, d); err != nil {
+		return nil, err
+	}
+	return d, nil
 }
 
 func (s *service) Update(ctx context.Context, id, userID string, req *UpdateDebtRequest) (*Debt, error) {
+	if req == nil {
+		return nil, fmt.Errorf("%w: request body is required", store.ErrInvalidInput)
+	}
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	d, err := s.repo.FindByID(ctx, id, userID)
-	if err != nil || d == nil {
-		return nil, errors.New("not found")
+	if err != nil {
+		return nil, err
 	}
 
 	d.PersonName = req.PersonName
@@ -45,22 +68,39 @@ func (s *service) Update(ctx context.Context, id, userID string, req *UpdateDebt
 	d.Status = req.Status
 	d.DueDate = req.DueDate
 
+	d.Revision = req.Revision
+
 	if req.Status == "paid" {
-		now := time.Now()
-		d.SettledAt = &now
-		d.RemainingAmount = 0
-	} else if req.Status != "paid" {
-		d.SettledAt = nil
+		d.RemainingAmount = decimal.Zero
 	}
 
-	err = s.repo.UpdateByID(ctx, d)
-	return d, err
+	normalizeSettlement(d)
+
+	if err := s.repo.UpdateByID(ctx, d); err != nil {
+		return nil, err
+	}
+	return d, nil
 }
 
 func (s *service) Delete(ctx context.Context, id, userID string) error {
-	err := s.repo.DeleteByID(ctx, id, userID)
-	if errors.Is(err, sql.ErrNoRows) {
-		return errors.New("not found")
+	return s.repo.DeleteByID(ctx, id, userID)
+}
+
+func normalizeSettlement(d *Debt) {
+	switch {
+	case d.RemainingAmount.IsZero():
+		d.Status = "paid"
+		if d.SettledAt == nil {
+			now := time.Now()
+			d.SettledAt = &now
+		}
+
+	case d.RemainingAmount.Equal(d.Amount):
+		d.Status = "pending"
+		d.SettledAt = nil
+
+	default:
+		d.Status = "partial"
+		d.SettledAt = nil
 	}
-	return err
 }

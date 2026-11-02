@@ -1,6 +1,11 @@
 package category
 
-import "time"
+import (
+	"api/internal/store"
+	"fmt"
+	"strings"
+	"time"
+)
 
 type Category struct {
 	ID        string     `db:"id" json:"id"`
@@ -12,10 +17,34 @@ type Category struct {
 	Revision  int64      `db:"revision" json:"revision"`
 }
 
+const maxNameLen = 100
+
 type CreateCategoryRequest struct {
 	Name string `json:"name"`
 }
 
 type UpdateCategoryRequest struct {
 	Name string `json:"name"`
+}
+
+func (r *CreateCategoryRequest) Validate() error {
+	r.Name = strings.TrimSpace(r.Name)
+	switch {
+	case r.Name == "":
+		return fmt.Errorf("%w: name is required", store.ErrInvalidInput)
+	case len(r.Name) > maxNameLen:
+		return fmt.Errorf("%w: name exceeds %d characters", store.ErrInvalidInput, maxNameLen)
+	}
+	return nil
+}
+
+func (r *UpdateCategoryRequest) Validate() error {
+	r.Name = strings.TrimSpace(r.Name)
+	switch {
+	case r.Name == "":
+		return fmt.Errorf("%w: name is required", store.ErrInvalidInput)
+	case len(r.Name) > maxNameLen:
+		return fmt.Errorf("%w: name exceeds %d characters", store.ErrInvalidInput, maxNameLen)
+	}
+	return nil
 }
