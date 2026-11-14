@@ -66,7 +66,15 @@ func (s *service) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 		return nil, err
 	}
 
-	user.Password = ""
+	refreshToken, err := GenerateRefreshToken(user.ID)
+	if err != nil {
+		return nil, err
+	}
 
-	return &AuthResponse{User: *user, Token: token}, nil
+	user.Password = ""
+	return &AuthResponse{
+		User:         *user,
+		Token:        token,
+		RefreshToken: refreshToken,
+	}, nil
 }

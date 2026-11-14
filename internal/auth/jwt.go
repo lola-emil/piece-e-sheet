@@ -12,22 +12,38 @@ var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
 
 type Claims struct {
 	UserID string `json:"user_id"`
+	Type   string `json:"typ"`
 	jwt.RegisteredClaims
 }
 
+const (
+	TokenTypeAccess  = "access"
+	TokenTypeRefresh = "refresh"
+)
+
 func GenerateToken(userID string) (string, error) {
-	expirationTime := time.Now().Add(24 * time.Hour)
-
-	claims := &Claims{
-		UserID: userID,
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
+	claims := jwt.MapClaims{
+		"user_id": userID,
+		"typ":     TokenTypeAccess,
+		"exp":     time.Now().Add(1 * time.Hour).Unix(), // short-lived
 	}
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).
+		SignedString([]byte(jwtSecret))
+}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
+func GenerateRefreshToken(userID string) (string, error) {
+	claims := jwt.MapClaims{
+		"user_id": userID,
+		"typ":     TokenTypeRefresh,
+		"exp":     time.Now().Add(60 * 24 * time.Hour).Unix(), // 60 days
+	}
+	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims).
+		SignedString([]byte(jwtSecret))
+}
+
+func AssertTokenType(claims jwt.MapClaims, expected string) bool {
+	typ, _ := claims["typ"].(string)
+	return typ == expected
 }
 
 func ValidateToken(tokenString string) (string, error) {
@@ -46,4 +62,18 @@ func ValidateToken(tokenString string) (string, error) {
 	}
 
 	return claims.UserID, nil
+}
+
+func ValidateTokenClaims(tokenString string) (*Claims, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims, func(t *jwt.Token) (interface{}, error) {
+		return jwtSecret, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if !token.Valid {
+		return nil, errors.New("invalid token")
+	}
+	return claims, nil
 }

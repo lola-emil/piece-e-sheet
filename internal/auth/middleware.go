@@ -36,12 +36,17 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		userID, err := ValidateToken(parts[1])
+		claims, err := ValidateTokenClaims(parts[1])
 		if err != nil {
 			respond.Error(w, http.StatusUnauthorized, "Invalid or expired token")
 			return
 		}
 
-		next.ServeHTTP(w, r.WithContext(WithUserID(r.Context(), userID)))
+		if claims.Type == TokenTypeRefresh {
+			respond.Error(w, http.StatusUnauthorized, "Access token required")
+			return
+		}
+
+		next.ServeHTTP(w, r.WithContext(WithUserID(r.Context(), claims.UserID)))
 	})
 }

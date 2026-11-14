@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"api/internal/server"
+
+	"github.com/shopspring/decimal"
 )
 
 func gracefulShutdown(apiServer *http.Server, done chan bool) {
@@ -38,6 +40,7 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 }
 
 func main() {
+	decimal.MarshalJSONWithoutQuotes = true
 
 	server := server.NewServer()
 

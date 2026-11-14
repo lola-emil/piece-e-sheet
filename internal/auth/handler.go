@@ -55,3 +55,26 @@ func (h *handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	respond.JSON(w, http.StatusOK, res)
 }
+
+func (h *handler) Refresh(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		RefreshToken string `json:"refresh_token"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.RefreshToken == "" {
+		respond.Error(w, http.StatusBadRequest, "refresh_token is required")
+		return
+	}
+
+	claims, err := ValidateTokenClaims(req.RefreshToken)
+	if err != nil || claims.Type != TokenTypeRefresh {
+		respond.Error(w, http.StatusUnauthorized, "invalid refresh token")
+		return
+	}
+
+	access, _ := GenerateToken(claims.UserID)
+	refresh, _ := GenerateRefreshToken(claims.UserID)
+	respond.JSON(w, http.StatusOK, &AuthResponse{
+		Token:        access,
+		RefreshToken: refresh,
+	})
+}
