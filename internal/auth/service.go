@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"api/internal/user"
 	"context"
 	"errors"
 
@@ -8,16 +9,19 @@ import (
 )
 
 type service struct {
-	repo AuthRepository
+	authRepo AuthRepository
+	userRepo user.UserRepository
 }
 
 type AuthService interface {
 	Register(ctx context.Context, req *RegisterRequest) (*AuthResponse, error)
 	Login(ctx context.Context, req *LoginRequest) (*AuthResponse, error)
+	LoginWithGoogle(ctx context.Context, info *UserInfo) (*AuthResponse, error)
+	GetMe(ctx context.Context, userID string) (*user.User, error)
 }
 
-func NewAuthService(repo AuthRepository) AuthService {
-	return &service{repo: repo}
+func NewAuthService(authRepo AuthRepository, userRepo user.UserRepository) AuthService {
+	return &service{authRepo: authRepo, userRepo: userRepo}
 }
 
 func (s *service) Register(ctx context.Context, req *RegisterRequest) (*AuthResponse, error) {
@@ -32,7 +36,7 @@ func (s *service) Register(ctx context.Context, req *RegisterRequest) (*AuthResp
 		Password:    string(hashedPassword),
 	}
 
-	err = s.repo.CreateUser(ctx, user)
+	err = s.authRepo.CreateUser(ctx, user)
 	if err != nil {
 		return nil, err
 	}
@@ -48,7 +52,7 @@ func (s *service) Register(ctx context.Context, req *RegisterRequest) (*AuthResp
 }
 
 func (s *service) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, error) {
-	user, err := s.repo.FindByEmail(ctx, req.Email)
+	user, err := s.authRepo.FindByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, err
 	}
@@ -77,4 +81,37 @@ func (s *service) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 		Token:        token,
 		RefreshToken: refreshToken,
 	}, nil
+}
+
+func (s *service) LoginWithGoogle(ctx context.Context, info *UserInfo) (*AuthResponse, error) {
+	user, err := s.authRepo.FindByEmail(ctx, info.Email)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		user = &User{
+			Email:       info.Email,
+			DisplayName: info.Name,
+			// add GoogleID/Picture columns to User if you want proper linking
+		}
+		if err := s.authRepo.CreateUser(ctx, user); err != nil {
+			return nil, err
+		}
+	}
+
+	access, err := GenerateToken(user.ID)
+	if err != nil {
+		return nil, err
+	}
+	refresh, err := GenerateRefreshToken(user.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	user.Password = ""
+	return &AuthResponse{User: *user, Token: access, RefreshToken: refresh}, nil
+}
+
+func (s *service) GetMe(ctx context.Context, userID string) (*user.User, error) {
+	return s.userRepo.FindByID(ctx, userID)
 }

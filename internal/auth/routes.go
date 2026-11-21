@@ -9,5 +9,11 @@ func RegisterRoutes(router chi.Router, h *handler) {
 		r.Post("/register", h.Register)
 		r.Post("/login", h.Login)
 		r.Post("/refresh", h.Refresh)
+		r.Get("/google", h.GoogleLogin)
+		r.Get("/callback", h.GoogleCallback)
+
+		r.Post("/logout", h.Logout)
+
+		r.With(AuthMiddleware).Get("/me", h.GetMe)
 	})
 }

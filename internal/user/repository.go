@@ -23,12 +23,12 @@ func NewUserRepository(db *sqlx.DB) UserRepository {
 
 func (r *repo) FindByID(ctx context.Context, userID string) (*User, error) {
 	query := `
-		SELECT * FROM users WHERE user_id = $1
+		SELECT * FROM users WHERE id = $1
 	`
 
 	var user User
 
-	err := r.db.GetContext(ctx, user, query, userID)
+	err := r.db.GetContext(ctx, &user, query, userID)
 
 	if err != nil {
 		return nil, err

@@ -9,8 +9,10 @@ import (
 	"syscall"
 	"time"
 
+	"api/internal/auth"
 	"api/internal/server"
 
+	"github.com/joho/godotenv"
 	"github.com/shopspring/decimal"
 )
 
@@ -40,6 +42,12 @@ func gracefulShutdown(apiServer *http.Server, done chan bool) {
 }
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Println("Warning: No .env file found. Relying on system environment variables.")
+	}
+
+	auth.InitOAuthConfig()
+
 	decimal.MarshalJSONWithoutQuotes = true
 
 	server := server.NewServer()

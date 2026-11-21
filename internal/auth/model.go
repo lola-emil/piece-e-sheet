@@ -11,6 +11,13 @@ type User struct {
 	UpdatedAt   time.Time `db:"updated_at" json:"updated_at"`
 }
 
+// Used for OAuth
+type UserInfo struct {
+	ID      string `json:"id"`
+	Email   string `json:"email"`
+	Name    string `json:"name"`
+	Picture string `json:"picture"`
+}
 type RegisterRequest struct {
 	Email       string `json:"email"`
 	DisplayName string `json:"display_name"`

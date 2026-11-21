@@ -16,6 +16,7 @@ import (
 	"api/internal/debt"
 	"api/internal/expense"
 	"api/internal/payment"
+	"api/internal/user"
 )
 
 type Server struct {
@@ -40,6 +41,7 @@ func NewServer() *http.Server {
 	debtRepo := debt.NewDebtRepository(dbInstance)
 	paymentRepo := payment.NewPaymentRepository(dbInstance)
 	accountRepo := account.NewAccountRepository(dbInstance)
+	userRepo := user.NewUserRepository(dbInstance)
 
 	// Declare Server config
 	server := &http.Server{
@@ -51,6 +53,7 @@ func NewServer() *http.Server {
 			debtRepo,
 			paymentRepo,
 			accountRepo,
+			userRepo,
 		),
 		IdleTimeout:  time.Minute,
 		ReadTimeout:  10 * time.Second,

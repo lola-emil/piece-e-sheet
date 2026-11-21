@@ -24,19 +24,32 @@ func UserIDFromRequest(r *http.Request) (string, bool) {
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var tokenString string
+
 		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
-			respond.Error(w, http.StatusUnauthorized, "Authorization header is required")
+		if authHeader != "" {
+			parts := strings.Split(authHeader, " ")
+			if len(parts) == 2 && strings.EqualFold(parts[0], "Bearer") {
+				tokenString = parts[1]
+			} else {
+				respond.Error(w, http.StatusUnauthorized, "Invalid authorization format")
+				return
+			}
+		}
+
+		if tokenString == "" {
+			cookie, err := r.Cookie("access_token")
+			if err == nil && cookie.Value != "" {
+				tokenString = cookie.Value
+			}
+		}
+
+		if tokenString == "" {
+			respond.Error(w, http.StatusUnauthorized, "Authentication required")
 			return
 		}
 
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
-			respond.Error(w, http.StatusUnauthorized, "Invalid authorization format")
-			return
-		}
-
-		claims, err := ValidateTokenClaims(parts[1])
+		claims, err := ValidateTokenClaims(tokenString)
 		if err != nil {
 			respond.Error(w, http.StatusUnauthorized, "Invalid or expired token")
 			return
